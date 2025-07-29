@@ -2,8 +2,8 @@ package main
 
 import (
 	"helpdesk/pkg"
-	"helpdesk/users-service/internal/handler"
-	"helpdesk/users-service/internal/repository"
+	"helpdesk/tickets-service/internal/handler"
+	"helpdesk/tickets-service/internal/repository"
 	"log"
 	"net/http"
 
@@ -21,10 +21,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Get("/health", handler.HealthCheckHandler)
-	r.Get("/users", apiServer.ListUsersHandler)
-	r.Get("/users/{id}", apiServer.GetUserHandler)
-	r.Post("/users", apiServer.CreateUserHandler)
-	r.Put("/users/{id}", apiServer.UpdateUserHandler)
-	r.Delete("/users/{id}", apiServer.DeleteUserHandler)
+	r.Post("/tickets", apiServer.CreateTicketHandler)
+
 	http.ListenAndServe(":8080", r)
 }

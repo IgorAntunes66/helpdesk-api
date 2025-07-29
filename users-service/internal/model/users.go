@@ -1,10 +1,10 @@
 package model
 
 type User struct {
-	ID int
-	Nome string
-	Senha string
-	Funcao string
-	Telefone string
-	CpfCnpj string
+	ID       int    `json:"id"`
+	Nome     string `json:"nome"`
+	Senha    string `json:"senha"`
+	Funcao   string `json:"funcao"`
+	Telefone string `json:"telefone"`
+	CpfCnpj  string `json:"cpf_cnpj"`
 }
