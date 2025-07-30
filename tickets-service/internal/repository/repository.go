@@ -47,7 +47,7 @@ func (s *Repository) ListTickets() ([]model.Ticket, error) {
 
 func (s *Repository) GetTicketByID(id int) (model.Ticket, error) {
 	var ticket model.Ticket
-	err := s.db.QueryRow(context.Background(), "SELECT * FROM tickets WHERE id=$1", id).Scan(&ticket)
+	err := s.db.QueryRow(context.Background(), "SELECT * FROM tickets WHERE id=$1", id).Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.UserID)
 	if err != nil {
 		return ticket, err
 	}

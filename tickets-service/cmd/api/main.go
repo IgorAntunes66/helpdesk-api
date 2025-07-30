@@ -20,8 +20,12 @@ func main() {
 	apiServer := handler.NewApiServer(repo)
 
 	r := chi.NewRouter()
-	r.Get("/health", handler.HealthCheckHandler)
 	r.Post("/tickets", apiServer.CreateTicketHandler)
+	r.Get("/health", handler.HealthCheckHandler)
+	r.Get("/tickets", apiServer.ListTicketsHandler)
+	r.Get("/tickets/{id}", apiServer.GetTicketHandler)
+	r.Put("/tickets/{id}", apiServer.UpdateTicketHandler)
+	r.Delete("/tickets/{id}", apiServer.DeleteTicketHandler)
 
 	http.ListenAndServe(":8080", r)
 }

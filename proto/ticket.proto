@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "/pkg/ticketpb";
+
+service TicketService {
+  rpc CreateTicket(CreateTicketRequest) returns (TicketResponse);
+}
+
+message TicketResponse {
+  int64 id = 1;
+  string titulo = 2;
+  string descricao = 3;
+  string status = 4;
+  string diagnostico = 5;
+  string solucao = 6;
+  string prioridade = 7;
+  int64 userid = 8;
+}
+
+message CreateTicketRequest {
+  string titulo = 1;
+  string descricao = 2;
+  string status = 3;
+  string diagnostico = 4;
+  string solucao = 5;
+  string prioridade = 6;
+  int64 userid = 7;
+}
