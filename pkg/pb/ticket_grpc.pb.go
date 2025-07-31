@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: ticket.proto
 
-package ticketpb
+package pb
 
 import (
 	context "context"

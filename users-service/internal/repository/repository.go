@@ -18,8 +18,8 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	}
 }
 
-func (s *Repository) CreateUser(user model.User) (int, error) {
-	err := s.db.QueryRow(context.Background(), "INSERT INTO users (nome, senha, funcao, telefone, cpfCnpj) VALUES ($1, $2, $3, $4, $5) returning id", user.Nome, user.Senha, user.Funcao, user.Telefone, user.CpfCnpj).Scan(&user.ID)
+func (s *Repository) CreateUser(user model.User) (int64, error) {
+	err := s.db.QueryRow(context.Background(), "INSERT INTO users (nome, senha, tipoUser, email, telefone, cpfCnpj) VALUES ($1, $2, $3, $4, $5, $6) returning id", user.Nome, user.Senha, user.TipoUser, user.Email, user.Telefone, user.CpfCnpj).Scan(&user.ID)
 	if err != nil {
 		return 0, err
 	}
@@ -38,7 +38,7 @@ func (s *Repository) FindAllUsers() ([]model.User, error) {
 	var u model.User
 
 	for rows.Next() {
-		if err := rows.Scan(&u.ID, &u.Nome, &u.Senha, &u.Funcao, &u.Telefone, &u.CpfCnpj); err != nil {
+		if err := rows.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Telefone, &u.CpfCnpj); err != nil {
 			return nil, err
 		}
 		usuarios = append(usuarios, u)
@@ -56,7 +56,7 @@ func (s *Repository) FindUserByID(id int) (model.User, error) {
 
 	var u model.User
 
-	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.Funcao, &u.Telefone, &u.CpfCnpj); err != nil {
+	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Telefone, &u.CpfCnpj); err != nil {
 		return u, err
 	}
 
@@ -64,7 +64,7 @@ func (s *Repository) FindUserByID(id int) (model.User, error) {
 }
 
 func (s *Repository) UpdateUser(id int, user model.User) error {
-	row, err := s.db.Exec(context.Background(), "UPDATE users SET nome=$1, senha=$2, funcao=$3, telefone=$4, cpfCnpj=$5 WHERE id=$6", user.Nome, user.Senha, user.Funcao, user.Telefone, user.CpfCnpj, id)
+	row, err := s.db.Exec(context.Background(), "UPDATE users SET nome=$1, senha=$2, tipoUser=$3, email=$4, telefone=$5, cpfCnpj=$6 WHERE id=$7", user.Nome, user.Senha, user.TipoUser, user.Email, user.Telefone, user.CpfCnpj, id)
 	if err != nil {
 		return err
 	}
