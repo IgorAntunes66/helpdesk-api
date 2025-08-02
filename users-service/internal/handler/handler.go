@@ -10,6 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ApiServer struct {
@@ -121,4 +123,12 @@ func (api *ApiServer) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Erro ao excluir o usuario do banco de dados", http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (api *ApiServer) TestGrpc(w http.ResponseWriter, r *http.Request) {
+	conn, err := grpc.NewClient("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		http.Error(w, "Erro ao conectar ao servidor gRPC", http.StatusInternalServerError)
+	}
+	defer conn.Close()
 }
