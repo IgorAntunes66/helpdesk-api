@@ -42,6 +42,7 @@ func main() {
 		}
 	}()
 
+
 	apiServer := handler.NewApiServer(repo)
 
 	r := chi.NewRouter()

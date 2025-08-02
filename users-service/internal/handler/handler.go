@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"helpdesk/pkg/pb"
 	"helpdesk/users-service/internal/model"
 	"helpdesk/users-service/internal/repository"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ApiServer struct {
@@ -131,4 +133,19 @@ func (api *ApiServer) TestGrpc(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erro ao conectar ao servidor gRPC", http.StatusInternalServerError)
 	}
 	defer conn.Close()
+
+	client := pb.NewTicketServiceClient(conn)
+
+	client.CreateTicket(r.Context(), &pb.CreateTicketRequest{
+		Titulo:          "Teste",
+		Descricao:       "Teste",
+		Status:          "Teste",
+		Diagnostico:     "Teste",
+		Solucao:         "Teste",
+		Prioridade:      "Teste",
+		DataAbertura:    timestamppb.Now(),
+		DataFechamento:  timestamppb.Now(),
+		DataAtualizacao: timestamppb.Now(),
+	})
+	w.WriteHeader(http.StatusOK)
 }
