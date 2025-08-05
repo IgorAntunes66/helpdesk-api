@@ -141,3 +141,31 @@ func (api *ApiServer) DeleteTicketHandler(w http.ResponseWriter, r *http.Request
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (api *ApiServer) CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	idInt, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Erro ao converter o ID da requisição para inteiro", http.StatusInternalServerError)
+		return
+	}
+
+	var comentario model.Comentario
+	if err = json.NewDecoder(r.Body).Decode(&comentario); err != nil {
+		http.Error(w, "Erro ao decodificar a requisição", http.StatusBadRequest)
+		return
+	}
+
+	comentario.TicketID = int64(idInt)
+
+	idComent, err := api.rep.CreateComment(comentario)
+	if err != nil {
+		http.Error(w, "Erro ao adicionar o comentario no banco de dados", http.StatusInternalServerError)
+		return
+	}
+	comentario.ID = idComent
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(comentario)
+}
