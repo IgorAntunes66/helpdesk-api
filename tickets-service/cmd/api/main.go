@@ -36,12 +36,12 @@ func main() {
 		//3 - Instanciar a sua implementação do serviço de Ticket
 		// (passando o repositorio como dependecia)
 		ticketServer := ticketsGrpc.NewServer(pb.UnimplementedTicketServiceServer{}, repo)
+		pb.RegisterTicketServiceServer(grpcServer, ticketServer)
 
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("Falha ao iniciar o servidor gRPC: %v", err)
 		}
 	}()
-
 
 	apiServer := handler.NewApiServer(repo)
 

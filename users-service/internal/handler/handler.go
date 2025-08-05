@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"helpdesk/pkg/pb"
@@ -13,7 +14,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type ApiServer struct {
@@ -127,7 +127,7 @@ func (api *ApiServer) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (api *ApiServer) TestGrpc(w http.ResponseWriter, r *http.Request) {
+func (api *ApiServer) CreateUserTicketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := grpc.NewClient("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		http.Error(w, "Erro ao conectar ao servidor gRPC", http.StatusInternalServerError)
@@ -136,16 +136,30 @@ func (api *ApiServer) TestGrpc(w http.ResponseWriter, r *http.Request) {
 
 	client := pb.NewTicketServiceClient(conn)
 
-	client.CreateTicket(r.Context(), &pb.CreateTicketRequest{
-		Titulo:          "Teste",
-		Descricao:       "Teste",
-		Status:          "Teste",
-		Diagnostico:     "Teste",
-		Solucao:         "Teste",
-		Prioridade:      "Teste",
-		DataAbertura:    timestamppb.Now(),
-		DataFechamento:  timestamppb.Now(),
-		DataAtualizacao: timestamppb.Now(),
+	var ticket pb.CreateTicketRequest
+	err = json.NewDecoder(r.Body).Decode(&ticket)
+	if err != nil {
+		http.Error(w, "Erro ao decodificar a requisição", http.StatusBadRequest)
+	}
+
+	client.CreateTicket(context.Background(), &pb.CreateTicketRequest{
+		Titulo:          ticket.Titulo,
+		Descricao:       ticket.Descricao,
+		Status:          ticket.Status,
+		Diagnostico:     ticket.Diagnostico,
+		Solucao:         ticket.Solucao,
+		Prioridade:      ticket.Prioridade,
+		DataAbertura:    ticket.DataAbertura,
+		DataFechamento:  ticket.DataFechamento,
+		DataAtualizacao: ticket.DataAtualizacao,
+		Anexos:          ticket.Anexos,
+		Tags:            ticket.Tags,
+		Historico:       ticket.Historico,
+		CategoriaId:     ticket.CategoriaId,
+		ResponsavelId:   ticket.ResponsavelId,
+		UserId:          ticket.UserId,
 	})
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
