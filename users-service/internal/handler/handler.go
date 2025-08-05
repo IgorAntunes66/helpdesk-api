@@ -1,10 +1,8 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"helpdesk/pkg/pb"
 	"helpdesk/users-service/internal/model"
 	"helpdesk/users-service/internal/repository"
 	"net/http"
@@ -12,8 +10,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ApiServer struct {
@@ -140,25 +136,4 @@ func (api *ApiServer) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (api *ApiServer) CreateUserTicketHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := grpc.NewClient("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		http.Error(w, "Erro ao conectar ao servidor gRPC", http.StatusInternalServerError)
-		return
-	}
-	defer conn.Close()
-
-	client := pb.NewTicketServiceClient(conn)
-
-	var ticket pb.CreateTicketRequest
-	err = json.NewDecoder(r.Body).Decode(&ticket)
-	if err != nil {
-		http.Error(w, "Erro ao decodificar a requisição", http.StatusBadRequest)
-		return
-	}
-
-	client.CreateTicket(context.Background(), &ticket)
-	w.WriteHeader(http.StatusOK)
 }

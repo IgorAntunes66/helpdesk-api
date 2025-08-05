@@ -3,21 +3,16 @@ package main
 import (
 	"helpdesk/pkg"
 	"log"
-	"net"
 	"net/http"
 	"os"
 
-	pb "helpdesk/pkg/pb"
 	"helpdesk/tickets-service/internal/handler"
 	"helpdesk/tickets-service/internal/repository"
-
-	ticketsGrpc "helpdesk/tickets-service/internal/grpc"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres" // Driver do postgres para o migrate
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"google.golang.org/grpc"
 )
 
 func main() {
@@ -29,25 +24,6 @@ func main() {
 	}
 
 	repo := repository.NewRepository(db)
-
-	go func() {
-		// 1 - Criar listener na porta 8081 para o gRPC
-		lis, err := net.Listen("tcp", ":8081")
-		if err != nil {
-			log.Fatalf("Falha ao escutar a porta gRPC: %v", err)
-		}
-		// 2 - Criar uma nova instancia do servidor gRPC
-		grpcServer := grpc.NewServer()
-
-		//3 - Instanciar a sua implementação do serviço de Ticket
-		// (passando o repositorio como dependecia)
-		ticketServer := ticketsGrpc.NewServer(pb.UnimplementedTicketServiceServer{}, repo)
-		pb.RegisterTicketServiceServer(grpcServer, ticketServer)
-
-		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("Falha ao iniciar o servidor gRPC: %v", err)
-		}
-	}()
 
 	apiServer := handler.NewApiServer(repo)
 

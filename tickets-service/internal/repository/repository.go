@@ -20,7 +20,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (s *Repository) CreateTicket(ticket model.Ticket) (int64, error) {
-	err := s.db.QueryRow(context.Background(), "INSERT INTO tickets (titulo, descricao, status, diagnostico, solucao, prioridade, data_abertura, data_fechamento, data_atualizacao, anexos, tags, categoria_id, responsavel_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) returning id", ticket.Titulo, ticket.Descricao, ticket.Status, ticket.Diagnostico, ticket.Solucao, ticket.Prioridade, ticket.DataAbertura, ticket.DataFechamento, ticket.DataAtualizacao, ticket.Anexos, ticket.Tags, ticket.CategoriaID, ticket.ResponsavelID, ticket.UserID).Scan(&ticket.ID)
+	err := s.db.QueryRow(context.Background(), "INSERT INTO tickets (titulo, descricao, status, diagnostico, solucao, prioridade, data_abertura, data_fechamento, data_atualizacao, anexos, tags, categoria_id, responsavel_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning id", ticket.Titulo, ticket.Descricao, ticket.Status, ticket.Diagnostico, ticket.Solucao, ticket.Prioridade, ticket.DataAbertura, ticket.DataFechamento, ticket.DataAtualizacao, ticket.Anexos, ticket.Tags, ticket.CategoriaID, ticket.ResponsavelID, ticket.UserID).Scan(&ticket.ID)
 	if err != nil {
 		go func() {
 			log.Printf("Erro ao adicionar ticket no banco de dados: %v", err)
