@@ -142,23 +142,7 @@ func (api *ApiServer) CreateUserTicketHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Erro ao decodificar a requisição", http.StatusBadRequest)
 	}
 
-	client.CreateTicket(context.Background(), &pb.CreateTicketRequest{
-		Titulo:          ticket.Titulo,
-		Descricao:       ticket.Descricao,
-		Status:          ticket.Status,
-		Diagnostico:     ticket.Diagnostico,
-		Solucao:         ticket.Solucao,
-		Prioridade:      ticket.Prioridade,
-		DataAbertura:    ticket.DataAbertura,
-		DataFechamento:  ticket.DataFechamento,
-		DataAtualizacao: ticket.DataAtualizacao,
-		Anexos:          ticket.Anexos,
-		Tags:            ticket.Tags,
-		Historico:       ticket.Historico,
-		CategoriaId:     ticket.CategoriaId,
-		ResponsavelId:   ticket.ResponsavelId,
-		UserId:          ticket.UserId,
-	})
+	client.CreateTicket(context.Background(), &ticket)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
