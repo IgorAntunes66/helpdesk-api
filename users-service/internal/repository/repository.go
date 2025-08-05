@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"helpdesk/users-service/internal/model"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,6 +22,9 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 func (s *Repository) CreateUser(user model.User) (int64, error) {
 	err := s.db.QueryRow(context.Background(), "INSERT INTO users (nome, senha, tipoUser, email, telefone, cpfCnpj) VALUES ($1, $2, $3, $4, $5, $6) returning id", user.Nome, user.Senha, user.TipoUser, user.Email, user.Telefone, user.CpfCnpj).Scan(&user.ID)
 	if err != nil {
+		go func() {
+			log.Printf("Erro ao inserir o usuario no banco de dados: %v", err)
+		}()
 		return 0, err
 	}
 
@@ -30,6 +34,9 @@ func (s *Repository) CreateUser(user model.User) (int64, error) {
 func (s *Repository) FindAllUsers() ([]model.User, error) {
 	rows, err := s.db.Query(context.Background(), "SELECT * FROM users")
 	if err != nil {
+		go func() {
+			log.Printf("Erro ao consultar o banco de dados: %v", err)
+		}()
 		return nil, err
 	}
 	defer rows.Close()
@@ -38,13 +45,19 @@ func (s *Repository) FindAllUsers() ([]model.User, error) {
 	var u model.User
 
 	for rows.Next() {
-		if err := rows.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Telefone, &u.CpfCnpj); err != nil {
+		if err := rows.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
+			go func() {
+				log.Printf("Erro ao decodificar o usuario: %v", err)
+			}()
 			return nil, err
 		}
 		usuarios = append(usuarios, u)
 	}
 
 	if err = rows.Err(); err != nil {
+		go func() {
+			log.Printf("Erro ao consultar o banco de dados: %v", err)
+		}()
 		return nil, err
 	}
 
@@ -56,7 +69,10 @@ func (s *Repository) FindUserByID(id int) (model.User, error) {
 
 	var u model.User
 
-	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Telefone, &u.CpfCnpj); err != nil {
+	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
+		go func() {
+			log.Printf("Erro ao decodificar o usuario: %v", err)
+		}()
 		return u, err
 	}
 

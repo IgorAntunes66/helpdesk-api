@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 
 	pb "helpdesk/pkg/pb"
 	"helpdesk/tickets-service/internal/handler"
@@ -13,10 +14,15 @@ import (
 	ticketsGrpc "helpdesk/tickets-service/internal/grpc"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres" // Driver do postgres para o migrate
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"google.golang.org/grpc"
 )
 
 func main() {
+	runMigrations()
+
 	db, err := pkg.ConectaDB()
 	if err != nil {
 		log.Fatalf("Erro ao iniciar o banco de dados: %v", err)
@@ -58,4 +64,19 @@ func main() {
 		log.Fatalf("Falha ao iniciar o servidor HTTP: %v", err)
 	}
 
+}
+
+func runMigrations() {
+	migrationDir := "file://db/migrations"
+	dbURL := os.Getenv("CHAVEDB")
+	m, err := migrate.New(migrationDir, dbURL)
+	if err != nil {
+		log.Fatalf("Erro ao criar a instancia de migração: %v", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Erro ao cplicar migrações: %v", err)
+	}
+
+	log.Println("Migrações aplicadas com sucesso!")
 }

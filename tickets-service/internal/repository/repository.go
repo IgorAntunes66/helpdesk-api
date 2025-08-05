@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"helpdesk/tickets-service/internal/model"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,8 +20,11 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (s *Repository) CreateTicket(ticket model.Ticket) (int64, error) {
-	err := s.db.QueryRow(context.Background(), "INSERT INTO tickets (titulo, descricao, status, diagnostico, solucao, prioridade, data_abertura, data_fechamento, data_atualizacao, anexos, tags, historico, categoria_id, responsavel_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) returning id", ticket.Titulo, ticket.Descricao, ticket.Status, ticket.Diagnostico, ticket.Solucao, ticket.Prioridade, ticket.DataAbertura, ticket.DataFechamento, ticket.DataAtualizacao, ticket.Anexos, ticket.Tags, ticket.Historico, ticket.CategoriaID, ticket.ResponsavelID, ticket.UserID).Scan(&ticket.ID)
+	err := s.db.QueryRow(context.Background(), "INSERT INTO tickets (titulo, descricao, status, diagnostico, solucao, prioridade, data_abertura, data_fechamento, data_atualizacao, anexos, tags, categoria_id, responsavel_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) returning id", ticket.Titulo, ticket.Descricao, ticket.Status, ticket.Diagnostico, ticket.Solucao, ticket.Prioridade, ticket.DataAbertura, ticket.DataFechamento, ticket.DataAtualizacao, ticket.Anexos, ticket.Tags, ticket.CategoriaID, ticket.ResponsavelID, ticket.UserID).Scan(&ticket.ID)
 	if err != nil {
+		go func() {
+			log.Printf("Erro ao adicionar ticket no banco de dados: %v", err)
+		}()
 		return 0, err
 	}
 	return ticket.ID, nil
@@ -35,7 +39,7 @@ func (s *Repository) ListTickets() ([]model.Ticket, error) {
 	}
 
 	for rows.Next() {
-		err := rows.Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.Historico, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
+		err := rows.Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +51,7 @@ func (s *Repository) ListTickets() ([]model.Ticket, error) {
 
 func (s *Repository) GetTicketByID(id int) (model.Ticket, error) {
 	var ticket model.Ticket
-	err := s.db.QueryRow(context.Background(), "SELECT * FROM tickets WHERE id=$1", id).Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.Historico, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
+	err := s.db.QueryRow(context.Background(), "SELECT * FROM tickets WHERE id=$1", id).Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
 	if err != nil {
 		return ticket, err
 	}
@@ -56,7 +60,7 @@ func (s *Repository) GetTicketByID(id int) (model.Ticket, error) {
 }
 
 func (s *Repository) UpdateTicket(id int, ticket model.Ticket) error {
-	row, err := s.db.Exec(context.Background(), "UPDATE tickets SET titulo=$1, descricao=$2, status=$3, diagnostico=$4, solucao=$5, prioridade=$6, data_abertura=$7, data_fechamento=$8, data_atualizacao=$9, anexos=$10, tags=$11, historico=$12, categoria_id=$13, responsavel_id=$14, user_id=$15 WHERE id=$16", &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.Historico, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID, id)
+	row, err := s.db.Exec(context.Background(), "UPDATE tickets SET titulo=$1, descricao=$2, status=$3, diagnostico=$4, solucao=$5, prioridade=$6, data_abertura=$7, data_fechamento=$8, data_atualizacao=$9, anexos=$10, tags=$11, categoria_id=$12, responsavel_id=$13, user_id=$14 WHERE id=$15", &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID, id)
 	if err != nil {
 		return err
 	}
@@ -79,4 +83,16 @@ func (s *Repository) DeleteTicket(id int) error {
 	}
 
 	return nil
+}
+
+func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
+	err := s.db.QueryRow(context.Background(), "INSERT INTO comentarios (descricao, data, user_id, ticket_id) VALUES ($1, $2, $3, $4) returning id", comment.Descricao, comment.Data, comment.UserID, comment.TicketID).Scan(&comment.TicketID)
+	if err != nil {
+		go func() {
+			log.Printf("Erro ao adicionar comentario no banco de dados: %v", err)
+		}()
+		return 0, err
+	}
+
+	return comment.ID, nil
 }
