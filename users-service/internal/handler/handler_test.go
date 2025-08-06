@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"helpdesk/users-service/internal/model"
 	"helpdesk/users-service/internal/repository"
 	"net/http"
@@ -53,6 +54,74 @@ func TestCreateUserHandler(t *testing.T) {
 	assert.NoError(t, err)                     // Não deve haver erro ao decodificar a resposta.
 	assert.Equal(t, int64(1), userResponse.ID) //O ID deve ser 1.
 	assert.Equal(t, userInput.Nome, userResponse.Nome)
+
+	mockRepo.AssertExpectations(t)
+}
+
+func TestCreateUserHandler_RepositoryError(t *testing.T) {
+	// Arrange (Preparar)
+	mockRepo := new(repository.MockUserRepository)
+
+	userInput := model.User{
+		Nome:     "John Doe",
+		Senha:    "password123",
+		TipoUser: "admin",
+		Email:    "teste@gmail.com",
+		Telefone: "123456789",
+		CpfCnpj:  "12345678901",
+	}
+
+	// A MUDANÇA CRUCIAL: A profecia da Falha
+	//Agora, instruimos nosso dublê de uma forma diferente
+	//"Eu espero que 'CreateUser' seja chamado com 'userInput'.
+	//Quando isso acontecer, você deve retornar um ID zero E um NOVO ERRO."
+	mockRepo.On("CreateUser", userInput).Return(int64(0), errors.New("erro de banco de dados"))
+	apiServer := NewApiServer(mockRepo)
+
+	body, _ := json.Marshal(userInput)
+	req := httptest.NewRequest("POST", "/users", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	// Act (Agir)
+	apiServer.CreateUserHandler(rr, req)
+
+	// Assert (Verificar)
+	//1. Verificamos se o handler agiu corretamente diante do erro.
+	// Ele não deve retornar 201, mas sim um erro de servidor.
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	//2. Garantimos que o dublê foi chamado exatamente como planejamos.
+	mockRepo.AssertExpectations(t)
+}
+
+func TestGetUserHandler(t *testing.T) {
+	//Arrange (Preparar)
+	mockRepo := new(repository.MockUserRepository)
+
+	userInput := model.User{
+		ID:       1,
+		Nome:     "John Doe",
+		Senha:    "password123",
+		TipoUser: "admin",
+		Email:    "teste@gmail.com",
+		Telefone: "123456789",
+		CpfCnpj:  "12345678901",
+	}
+
+	mockRepo.On("FindUserById", int64(1)).Return(userInput, nil)
+	apiServer := NewApiServer(mockRepo)
+
+	body, _ := json.Marshal(userInput)
+	req := httptest.NewRequest("GET", "/users/1", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	apiServer.GetUserHandler(rr, req)
+
+	var userOutput model.User
+	_ = json.NewDecoder(rr.Body).Decode(&userOutput)
+
+	assert.Equal(t, http.StatusFound, rr.Code)
+	assert.Equal(t, userInput.Nome, userOutput.Nome)
 
 	mockRepo.AssertExpectations(t)
 }
