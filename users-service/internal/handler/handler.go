@@ -88,7 +88,7 @@ func (api *ApiServer) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusFound)
+	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(user)
 	if err != nil {
 		http.Error(w, "Erro ao codificar o usuario em json", http.StatusInternalServerError)

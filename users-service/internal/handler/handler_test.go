@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"helpdesk/users-service/internal/model"
@@ -10,6 +11,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -108,20 +111,58 @@ func TestGetUserHandler(t *testing.T) {
 		CpfCnpj:  "12345678901",
 	}
 
-	mockRepo.On("FindUserById", int64(1)).Return(userInput, nil)
+	mockRepo.On("FindUserByID", int64(1)).Return(userInput, nil)
 	apiServer := NewApiServer(mockRepo)
 
-	body, _ := json.Marshal(userInput)
-	req := httptest.NewRequest("GET", "/users/1", bytes.NewReader(body))
+	req := httptest.NewRequest("GET", "/users/1", nil)
 	rr := httptest.NewRecorder()
+
+	//Injetando o contexto da rota
+	//Criamos um contexto de rota do Chi e dizemos a ele que o parâmetro "id" tem o valor "1".
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("id", "1")
+
+	//Anexamos este contexto magico a nossa requisição.
+	//Agora, quando o handler chamar 'chi.URLParam(r, "id")', ele encontrará o valor!
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
 
 	apiServer.GetUserHandler(rr, req)
 
 	var userOutput model.User
 	_ = json.NewDecoder(rr.Body).Decode(&userOutput)
 
-	assert.Equal(t, http.StatusFound, rr.Code)
+	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, userInput.Nome, userOutput.Nome)
+	assert.Equal(t, userInput.ID, userOutput.ID)
 
+	mockRepo.AssertExpectations(t)
+}
+
+func TestGetUserHandler_RepositoryError(t *testing.T) {
+	mockRepo := new(repository.MockUserRepository)
+
+	userInput := model.User{
+		ID:       2,
+		Nome:     "John Doe",
+		Senha:    "password123",
+		TipoUser: "admin",
+		Email:    "teste@gmail.com",
+		Telefone: "123456789",
+		CpfCnpj:  "12345678901",
+	}
+
+	mockRepo.On("FindUserByID", int64(1)).Return(userInput, pgx.ErrNoRows)
+	apiServer := NewApiServer(mockRepo)
+
+	req := httptest.NewRequest("GET", "/users/1", nil)
+	rr := httptest.NewRecorder()
+
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("id", "1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+
+	apiServer.GetUserHandler(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
 	mockRepo.AssertExpectations(t)
 }
