@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"helpdesk/users-service/internal/model"
-	"helpdesk/users-service/internal/repository"
 	"net/http"
 	"strconv"
 
@@ -13,10 +12,11 @@ import (
 )
 
 type ApiServer struct {
-	rep *repository.Repository
+	rep model.UserRepository
 }
 
-func NewApiServer(rep *repository.Repository) *ApiServer {
+// Dando problema ao chamar os metodos do BD
+func NewApiServer(rep model.UserRepository) *ApiServer {
 	return &ApiServer{
 		rep: rep,
 	}
