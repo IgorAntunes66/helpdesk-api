@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"helpdesk/tickets-service/internal/model"
 	"log"
 
@@ -60,13 +61,11 @@ func (s *Repository) GetTicketByID(id int) (model.Ticket, error) {
 }
 
 func (s *Repository) UpdateTicket(id int, ticket model.Ticket) error {
-	row, err := s.db.Exec(context.Background(), "UPDATE tickets SET titulo=$1, descricao=$2, status=$3, diagnostico=$4, solucao=$5, prioridade=$6, data_abertura=$7, data_fechamento=$8, data_atualizacao=$9, anexos=$10, tags=$11, categoria_id=$12, responsavel_id=$13, user_id=$14 WHERE id=$15", &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID, id)
-	if err != nil {
-		return err
-	}
-
-	if row.RowsAffected() != 1 {
+	_, err := s.db.Exec(context.Background(), "UPDATE tickets SET titulo=$1, descricao=$2, status=$3, diagnostico=$4, solucao=$5, prioridade=$6, data_abertura=$7, data_fechamento=$8, data_atualizacao=$9, anexos=$10, tags=$11, categoria_id=$12, responsavel_id=$13, user_id=$14 WHERE id=$15", &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID, id)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return pgx.ErrNoRows
+	} else if err != nil {
+		return err
 	}
 
 	return nil
@@ -85,6 +84,7 @@ func (s *Repository) DeleteTicket(id int) error {
 	return nil
 }
 
+PAREI AQUI PRECISO DESCOBRIR O QUE FAZER PARA PASSAR O TICKET_ID E O USER_ID
 func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
 	err := s.db.QueryRow(context.Background(), "INSERT INTO comentarios (descricao, data, user_id, ticket_id) VALUES ($1, $2, $3, $4) returning id", comment.Descricao, comment.Data, comment.UserID, comment.TicketID).Scan(&comment.TicketID)
 	if err != nil {
@@ -95,4 +95,65 @@ func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
 	}
 
 	return comment.ID, nil
+}
+
+func (s *Repository) ListCommentsByTicketID(id int) ([]model.Comentario, error) {
+	var lista []model.Comentario
+	var comentario model.Comentario
+
+	rows, err := s.db.Query(context.Background(), "SELECT * FROM comentarios WHERE ticket_id=$1", id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID)
+		if err != nil {
+			return nil, err
+		}
+		lista = append(lista, comentario)
+	}
+
+	return lista, nil
+}
+
+func (s *Repository) ListCommentsByUserID(id int) ([]model.Comentario, error) {
+	var lista []model.Comentario
+	var comentario model.Comentario
+
+	rows, err := s.db.Query(context.Background(), "SELECT * FROM comentarios WHERE user_id=$1", id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID)
+		if err != nil {
+			return nil, err
+		}
+		lista = append(lista, comentario)
+	}
+
+	return lista, nil
+}
+
+func (s *Repository) UpdateComment(id int, comment model.Comentario) error {
+	_, err := s.db.Exec(context.Background(), "UPDATE comentarios SET descricao=$1, data=$2, user_id=$3, ticket_id=$4 WHERE id=$5", &comment.Descricao, &comment.Data, &comment.UserID, &comment.TicketID, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return err
+	} else if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Repository) DeleteComment(id int) error {
+	_, err := s.db.Exec(context.Background(), "DELETE * FROM cometarios WHERE id=$1", id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return pgx.ErrNoRows
+	} else if err != nil {
+		return err
+	}
+	return nil
 }

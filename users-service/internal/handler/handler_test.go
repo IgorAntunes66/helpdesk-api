@@ -141,17 +141,7 @@ func TestGetUserHandler(t *testing.T) {
 func TestGetUserHandler_RepositoryError(t *testing.T) {
 	mockRepo := new(repository.MockUserRepository)
 
-	userInput := model.User{
-		ID:       2,
-		Nome:     "John Doe",
-		Senha:    "password123",
-		TipoUser: "admin",
-		Email:    "teste@gmail.com",
-		Telefone: "123456789",
-		CpfCnpj:  "12345678901",
-	}
-
-	mockRepo.On("FindUserByID", int64(1)).Return(userInput, pgx.ErrNoRows)
+	mockRepo.On("FindUserByID", int64(1)).Return(model.User{}, pgx.ErrNoRows)
 	apiServer := NewApiServer(mockRepo)
 
 	req := httptest.NewRequest("GET", "/users/1", nil)

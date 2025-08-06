@@ -35,7 +35,7 @@ func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request
 	var ticket model.Ticket
 	err := json.NewDecoder(r.Body).Decode(&ticket)
 	if err != nil {
-		http.Error(w, "Erro ao decodigicar o corpo da requisição", http.StatusInternalServerError)
+		http.Error(w, "Erro ao decodificar o corpo da requisição: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -62,20 +62,20 @@ func (api *ApiServer) ListTicketsHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(lista)
 	if err != nil {
 		http.Error(w, "Erro ao converter a lista para json", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		http.Error(w, "Erro ao converter id para inteiro", http.StatusInternalServerError)
+		http.Error(w, "ID inválido, deve ser um número inteiro", http.StatusBadRequest)
 		return
 	}
 
@@ -88,27 +88,27 @@ func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(ticket)
 	if err != nil {
 		http.Error(w, "Erro ao converter ticket para json", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		http.Error(w, "Erro ao converter id para inteiro", http.StatusInternalServerError)
+		http.Error(w, "ID inválido, deve ser um número inteiro", http.StatusBadRequest)
 		return
 	}
 
 	var ticket model.Ticket
 	err = json.NewDecoder(r.Body).Decode(&ticket)
 	if err != nil {
-		http.Error(w, "Erro ao decodificar a requisição", http.StatusInternalServerError)
+		http.Error(w, "Erro ao decodificar o corpo da requisição: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -127,7 +127,7 @@ func (api *ApiServer) DeleteTicketHandler(w http.ResponseWriter, r *http.Request
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		http.Error(w, "Erro ao obter ID da requisição", http.StatusInternalServerError)
+		http.Error(w, "ID inválido, deve ser um número inteiro", http.StatusBadRequest)
 		return
 	}
 
@@ -146,7 +146,7 @@ func (api *ApiServer) CreateCommentHandler(w http.ResponseWriter, r *http.Reques
 	idStr := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Erro ao converter o ID da requisição para inteiro", http.StatusInternalServerError)
+		http.Error(w, "ID do ticket inválido, deve ser um número inteiro", http.StatusBadRequest)
 		return
 	}
 
@@ -168,4 +168,93 @@ func (api *ApiServer) CreateCommentHandler(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(comentario)
+}
+
+func (api *ApiServer) ListCommentsByTicketHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID do ticket inválido, deve ser um número inteiro", http.StatusBadRequest)
+		return
+	}
+
+	lista, err := api.rep.ListCommentsByTicketID(id)
+	if err != nil {
+		http.Error(w, "Erro ao consultar o BD", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(lista); err != nil {
+		// Se a lista foi obtida mas a codificação falha, é um erro do servidor.
+		http.Error(w, "Erro ao codificar a resposta em JSON", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *ApiServer) ListCommentsByUserHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID do usuário inválido, deve ser um número inteiro", http.StatusBadRequest)
+		return
+	}
+
+	lista, err := api.rep.ListCommentsByUserID(id)
+	if err != nil {
+		http.Error(w, "Erro ao consultar o BD", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(lista); err != nil {
+		http.Error(w, "Erro ao codificar a resposta em JSON", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (api *ApiServer) UpdateCommentHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID do comentário inválido, deve ser um número inteiro", http.StatusBadRequest)
+		return
+	}
+
+	var comment model.Comentario
+	if err = json.NewDecoder(r.Body).Decode(&comment); err != nil {
+		http.Error(w, "Erro ao decodificar o corpo da requisição: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err = api.rep.UpdateComment(id, comment); err != nil {
+		if err == pgx.ErrNoRows {
+			http.Error(w, "Comentário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Erro ao atualizar o comentario no banco de dados", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (api *ApiServer) DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID do comentário inválido, deve ser um número inteiro", http.StatusBadRequest)
+		return
+	}
+
+	err = api.rep.DeleteComment(id)
+	if err == pgx.ErrNoRows {
+		http.Error(w, "Comentário não encontrado", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, "Erro ao remover o comentário do banco de dados", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
