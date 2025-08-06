@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 type User struct {
 	ID       int64  `json:"id"`
 	Nome     string `json:"nome"`
@@ -8,4 +10,8 @@ type User struct {
 	Email    string `json:"email"`
 	Telefone string `json:"telefone"`
 	CpfCnpj  string `json:"cpf_cnpj"`
+}
+
+type UserRepository interface {
+	GetUserByID(ctx context.Context, id int64) (*User, error)
 }
