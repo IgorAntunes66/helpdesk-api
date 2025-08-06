@@ -1,7 +1,5 @@
 package model
 
-import "context"
-
 type User struct {
 	ID       int64  `json:"id"`
 	Nome     string `json:"nome"`
@@ -13,5 +11,9 @@ type User struct {
 }
 
 type UserRepository interface {
-	GetUserByID(ctx context.Context, id int64) (*User, error)
+	CreateUser(user User) (int64, error)
+	FindAllUsers() ([]User, error)
+	FindUserByID(id int64) (User, error)
+	UpdateUser(id int64, user User) error
+	DeleteUser(id int64) error
 }

@@ -78,7 +78,7 @@ func (api *ApiServer) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := api.rep.FindUserByID(idInt)
+	user, err := api.rep.FindUserByID(int64(idInt))
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "Usuario não encontrado no banco de dados", http.StatusNotFound)
 		return
@@ -112,7 +112,7 @@ func (api *ApiServer) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = api.rep.UpdateUser(idInt, u)
+	err = api.rep.UpdateUser(int64(idInt), u)
 	if err != nil {
 		http.Error(w, "Erro ao atualizar o usuario no banco de dados", http.StatusInternalServerError)
 		return
@@ -127,7 +127,7 @@ func (api *ApiServer) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = api.rep.DeleteUser(idInt)
+	err = api.rep.DeleteUser(int64(idInt))
 	if errors.Is(err, pgx.ErrNoRows) {
 		http.Error(w, "Usuario não encontrado no banco de dados", http.StatusNotFound)
 		return

@@ -26,7 +26,12 @@ func (m *MockUserRepository) FindUserByID(id int64) (model.User, error) {
 	return args.Get(0).(model.User), args.Error(1)
 }
 
-func (m *MockUserRepository) UpdateUser(id int64, model.User) error {
+func (m *MockUserRepository) UpdateUser(id int64, user model.User) error {
 	args := m.Called(id)
-	return args.Get(0), args.Error(1)
-} 
+	return args.Error(1)
+}
+
+func (m *MockUserRepository) DeleteUser(id int64) error {
+	args := m.Called(id)
+	return args.Error(1)
+}

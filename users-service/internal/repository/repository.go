@@ -64,7 +64,7 @@ func (s *Repository) FindAllUsers() ([]model.User, error) {
 	return usuarios, nil
 }
 
-func (s *Repository) FindUserByID(id int) (model.User, error) {
+func (s *Repository) FindUserByID(id int64) (model.User, error) {
 	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE id=$1", id)
 
 	var u model.User
@@ -79,7 +79,7 @@ func (s *Repository) FindUserByID(id int) (model.User, error) {
 	return u, nil
 }
 
-func (s *Repository) UpdateUser(id int, user model.User) error {
+func (s *Repository) UpdateUser(id int64, user model.User) error {
 	row, err := s.db.Exec(context.Background(), "UPDATE users SET nome=$1, senha=$2, tipoUser=$3, email=$4, telefone=$5, cpfCnpj=$6 WHERE id=$7", user.Nome, user.Senha, user.TipoUser, user.Email, user.Telefone, user.CpfCnpj, id)
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func (s *Repository) UpdateUser(id int, user model.User) error {
 	return nil
 }
 
-func (s *Repository) DeleteUser(id int) error {
+func (s *Repository) DeleteUser(id int64) error {
 	row, err := s.db.Exec(context.Background(), "DELETE FROM users WHERE id=$1", id)
 	if err != nil {
 		return err
