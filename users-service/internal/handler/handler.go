@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"helpdesk/users-service/internal/model"
+	"helpdesk/users-service/internal/utils"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -156,5 +158,20 @@ func (api *ApiServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Senha incorreta", http.StatusUnauthorized)
 	}
 
+	tokenJwt, err := utils.GerarToken(userDB)
+	if err != nil {
+		if err == jwt.ErrTokenExpired {
+			http.Error(w, "Token expirado", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, "Não foi possivel gerar o tokenJwt", http.StatusUnauthorized)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	err = json.NewEncoder(w).Encode(tokenJwt)
+	if err != nil {
+		http.Error(w, "Erro ao codigicar o token JWT", http.StatusInternalServerError)
+		return
+	}
 }
