@@ -84,7 +84,6 @@ func (s *Repository) DeleteTicket(id int) error {
 	return nil
 }
 
-PAREI AQUI PRECISO DESCOBRIR O QUE FAZER PARA PASSAR O TICKET_ID E O USER_ID
 func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
 	err := s.db.QueryRow(context.Background(), "INSERT INTO comentarios (descricao, data, user_id, ticket_id) VALUES ($1, $2, $3, $4) returning id", comment.Descricao, comment.Data, comment.UserID, comment.TicketID).Scan(&comment.TicketID)
 	if err != nil {

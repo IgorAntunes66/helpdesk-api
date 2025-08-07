@@ -34,10 +34,12 @@ func main() {
 	r.Get("/tickets/{id}", apiServer.GetTicketHandler)
 	r.Put("/tickets/{id}", apiServer.UpdateTicketHandler)
 	r.Delete("/tickets/{id}", apiServer.DeleteTicketHandler)
-	
+
 	r.Post("/tickets/{id}/comments", apiServer.CreateCommentHandler)
-	r.Get("/tickets/{id}")
-	
+	r.Get("/tickets/{id}/comments", apiServer.ListCommentsByTicketHandler)
+	r.Get("/tickets/{id}/users/comments/{id}", apiServer.ListCommentsByUserHandler)
+	r.Put("/tickets/comments/{id}", apiServer.UpdateCommentHandler)
+	r.Delete("/tickets/comments/{id}", apiServer.DeleteCommentHandler)
 
 	log.Println("Servidor HTTP iniciado na porta 8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {

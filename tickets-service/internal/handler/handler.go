@@ -41,7 +41,7 @@ func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request
 
 	id, err := api.rep.CreateTicket(ticket)
 	if err != nil {
-		http.Error(w, "Erro ao adicionar o ticket no banco de dados", http.StatusInternalServerError)
+		http.Error(w, "Erro ao adicionar o ticket no banco de dados", http.StatusBadRequest)
 		return
 	}
 	ticket.ID = id
@@ -84,7 +84,7 @@ func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Registro inexistente", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, "Erro ao obter dados no banco de dados", http.StatusInternalServerError)
+		http.Error(w, "Erro ao obter dados no banco de dados", http.StatusBadRequest)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 	var ticket model.Ticket
 	err = json.NewDecoder(r.Body).Decode(&ticket)
 	if err != nil {
-		http.Error(w, "Erro ao decodificar o corpo da requisição: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Erro ao decodificar o corpo da requisição", http.StatusBadRequest)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Registro não encontrado", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, "Erro ao modificar registro no banco de dados", http.StatusInternalServerError)
+		http.Error(w, "Erro ao modificar registro no banco de dados", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -136,7 +136,7 @@ func (api *ApiServer) DeleteTicketHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Registro não encontrado", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, "Erro ao remover registro do banco de dados", http.StatusInternalServerError)
+		http.Error(w, "Erro ao remover registro do banco de dados", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -160,7 +160,7 @@ func (api *ApiServer) CreateCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	idComent, err := api.rep.CreateComment(comentario)
 	if err != nil {
-		http.Error(w, "Erro ao adicionar o comentario no banco de dados", http.StatusInternalServerError)
+		http.Error(w, "Erro ao adicionar o comentario no banco de dados", http.StatusBadRequest)
 		return
 	}
 	comentario.ID = idComent
@@ -180,7 +180,7 @@ func (api *ApiServer) ListCommentsByTicketHandler(w http.ResponseWriter, r *http
 
 	lista, err := api.rep.ListCommentsByTicketID(id)
 	if err != nil {
-		http.Error(w, "Erro ao consultar o BD", http.StatusInternalServerError)
+		http.Error(w, "Erro ao consultar o BD", http.StatusBadRequest)
 		return
 	}
 

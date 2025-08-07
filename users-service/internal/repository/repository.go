@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Repository struct {
@@ -20,7 +21,11 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (s *Repository) CreateUser(user model.User) (int64, error) {
-	err := s.db.QueryRow(context.Background(), "INSERT INTO users (nome, senha, tipoUser, email, telefone, cpfCnpj) VALUES ($1, $2, $3, $4, $5, $6) returning id", user.Nome, user.Senha, user.TipoUser, user.Email, user.Telefone, user.CpfCnpj).Scan(&user.ID)
+	senha, err := GerarHashSenha(user.Senha)
+	if err != nil {
+		return 0, err
+	}
+	err = s.db.QueryRow(context.Background(), "INSERT INTO users (nome, senha, tipoUser, email, telefone, cpfCnpj) VALUES ($1, $2, $3, $4, $5, $6) returning id", user.Nome, string(senha), user.TipoUser, user.Email, user.Telefone, user.CpfCnpj).Scan(&user.ID)
 	if err != nil {
 		go func() {
 			log.Printf("Erro ao inserir o usuario no banco de dados: %v", err)
@@ -103,4 +108,12 @@ func (s *Repository) DeleteUser(id int64) error {
 	}
 
 	return nil
+}
+
+func GerarHashSenha(senha string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword([]byte(senha), bcrypt.DefaultCost)
+}
+
+func VerificarSenha(hashSalvo string, senhaLogin string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashSalvo), []byte(senhaLogin))
 }
