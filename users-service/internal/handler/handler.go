@@ -138,3 +138,23 @@ func (api *ApiServer) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (api *ApiServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+	var loginReq model.LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
+		http.Error(w, "Erro ao decodificar o corpo da requisição", http.StatusBadRequest)
+		return
+	}
+
+	userDB, err := api.rep.FindUserByEmail(loginReq.Email)
+	if err != nil {
+		http.Error(w, "Email inexistente", http.StatusNotFound)
+		return
+	}
+
+	if err = api.rep.VerificarSenha(loginReq.Senha, userDB.Senha); err != nil {
+		http.Error(w, "Senha incorreta", http.StatusUnauthorized)
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

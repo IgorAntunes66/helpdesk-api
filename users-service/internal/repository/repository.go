@@ -21,7 +21,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (s *Repository) CreateUser(user model.User) (int64, error) {
-	senha, err := GerarHashSenha(user.Senha)
+	senha, err := s.GerarHashSenha(user.Senha)
 	if err != nil {
 		return 0, err
 	}
@@ -84,6 +84,18 @@ func (s *Repository) FindUserByID(id int64) (model.User, error) {
 	return u, nil
 }
 
+func (s *Repository) FindUserByEmail(email string) (model.User, error) {
+	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$4", email)
+
+	var u model.User
+
+	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
+		return u, err
+	}
+
+	return u, nil
+}
+
 func (s *Repository) UpdateUser(id int64, user model.User) error {
 	row, err := s.db.Exec(context.Background(), "UPDATE users SET nome=$1, senha=$2, tipoUser=$3, email=$4, telefone=$5, cpfCnpj=$6 WHERE id=$7", user.Nome, user.Senha, user.TipoUser, user.Email, user.Telefone, user.CpfCnpj, id)
 	if err != nil {
@@ -110,10 +122,10 @@ func (s *Repository) DeleteUser(id int64) error {
 	return nil
 }
 
-func GerarHashSenha(senha string) ([]byte, error) {
+func (s *Repository) GerarHashSenha(senha string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(senha), bcrypt.DefaultCost)
 }
 
-func VerificarSenha(hashSalvo string, senhaLogin string) error {
+func (s *Repository) VerificarSenha(hashSalvo string, senhaLogin string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashSalvo), []byte(senhaLogin))
 }
