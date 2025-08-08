@@ -196,20 +196,19 @@ func TestLoginUserHandler(t *testing.T) {
 
 	senha := "senha123"
 
-	hashSenha, _ := repository.GerarHashSenha(senha)
-
 	mockUser := model.User{
 		ID:    1,
 		Email: "igorgantunes@hotmail.com",
-		Senha: string(hashSenha),
+		Senha: "senha123",
+		Nome:  "Igor",
 	}
-
-	mockRepo.On("FindUserByEmail", "igorgantunes@hotmail.com").Return(mockUser, nil)
 
 	loginCredentials := model.LoginRequest{
 		Email: mockUser.Email,
 		Senha: senha,
 	}
+
+	mockRepo.On("FindUserByEmail", loginCredentials).Return(mockUser, nil)
 
 	apiServer := NewApiServer(mockRepo)
 
@@ -237,7 +236,8 @@ func TestLoginUserHandler(t *testing.T) {
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	assert.True(t, ok, "Não foi possivel ler as reinvidicações do token")
-	assert.Equal(t, float64(mockUser.ID), claims["id"], "O ID do usuario no token esta incorreto")
+	assert.Equal(t, mockUser.ID, claims.UserID, "O ID do usuario no token esta incorreto")
+	assert.Equal(t, mockUser.Nome, claims.Nome, "O Nome do usuario no token esta incorreto")
 
 	mockRepo.AssertExpectations(t)
 }

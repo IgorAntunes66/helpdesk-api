@@ -85,7 +85,7 @@ func (s *Repository) DeleteTicket(id int) error {
 }
 
 func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
-	err := s.db.QueryRow(context.Background(), "INSERT INTO comentarios (descricao, data, user_id, ticket_id) VALUES ($1, $2, $3, $4) returning id", comment.Descricao, comment.Data, comment.UserID, comment.TicketID).Scan(&comment.TicketID)
+	err := s.db.QueryRow(context.Background(), "INSERT INTO comentarios (descricao, data, user_id, ticket_id) VALUES ($1, $2, $3, $4) returning id", comment.Descricao, comment.Data, comment.UserID, comment.TicketID).Scan(&comment.ID)
 	if err != nil {
 		go func() {
 			log.Printf("Erro ao adicionar comentario no banco de dados: %v", err)
@@ -148,7 +148,7 @@ func (s *Repository) UpdateComment(id int, comment model.Comentario) error {
 }
 
 func (s *Repository) DeleteComment(id int) error {
-	_, err := s.db.Exec(context.Background(), "DELETE * FROM cometarios WHERE id=$1", id)
+	_, err := s.db.Exec(context.Background(), "DELETE FROM comentarios WHERE id=$1", id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return pgx.ErrNoRows
 	} else if err != nil {

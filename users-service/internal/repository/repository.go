@@ -85,7 +85,7 @@ func (s *Repository) FindUserByID(id int64) (model.User, error) {
 }
 
 func (s *Repository) FindUserByEmail(loginReq model.LoginRequest) (model.User, error) {
-	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$4", loginReq.Email)
+	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$1", loginReq.Email)
 
 	var u model.User
 
