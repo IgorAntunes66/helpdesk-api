@@ -26,8 +26,8 @@ func (m *MockUserRepository) FindUserByID(id int64) (model.User, error) {
 	return args.Get(0).(model.User), args.Error(1)
 }
 
-func (m *MockUserRepository) FindUserByEmail(email string) (model.User, error) {
-	args := m.Called(email)
+func (m *MockUserRepository) FindUserByEmail(loginReq model.LoginRequest) (model.User, error) {
+	args := m.Called(loginReq)
 	return args.Get(0).(model.User), args.Error(1)
 }
 
@@ -38,15 +38,5 @@ func (m *MockUserRepository) UpdateUser(id int64, user model.User) error {
 
 func (m *MockUserRepository) DeleteUser(id int64) error {
 	args := m.Called(id)
-	return args.Error(1)
-}
-
-func (m *MockUserRepository) GerarHashSenha(senha string) ([]byte, error) {
-	args := m.Called(senha)
-	return args.Get(0).([]byte), args.Error(1)
-}
-
-func (m *MockUserRepository) VerificarSenha(hashSalvo string, senhaLogin string) error {
-	args := m.Called(hashSalvo, senhaLogin)
 	return args.Error(1)
 }

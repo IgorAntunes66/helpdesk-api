@@ -14,11 +14,9 @@ type UserRepository interface {
 	CreateUser(user User) (int64, error)
 	FindAllUsers() ([]User, error)
 	FindUserByID(id int64) (User, error)
-	FindUserByEmail(email string) (User, error)
+	FindUserByEmail(loginReq LoginRequest) (User, error)
 	UpdateUser(id int64, user User) error
 	DeleteUser(id int64) error
-	GerarHashSenha(senha string) ([]byte, error)
-	VerificarSenha(hashSalvo string, senhaLogin string) error
 }
 
 type LoginRequest struct {

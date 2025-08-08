@@ -149,14 +149,10 @@ func (api *ApiServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDB, err := api.rep.FindUserByEmail(loginReq.Email)
+	userDB, err := api.rep.FindUserByEmail(loginReq)
 	if err != nil {
-		http.Error(w, "Email inexistente", http.StatusNotFound)
+		http.Error(w, "Email ou senha", http.StatusNotFound)
 		return
-	}
-
-	if err = api.rep.VerificarSenha(loginReq.Senha, userDB.Senha); err != nil {
-		http.Error(w, "Senha incorreta", http.StatusUnauthorized)
 	}
 
 	tokenJwt, err := utils.GerarToken(userDB)

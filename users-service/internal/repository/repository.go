@@ -21,7 +21,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (s *Repository) CreateUser(user model.User) (int64, error) {
-	senha, err := s.GerarHashSenha(user.Senha)
+	senha, err := GerarHashSenha(user.Senha)
 	if err != nil {
 		return 0, err
 	}
@@ -84,12 +84,16 @@ func (s *Repository) FindUserByID(id int64) (model.User, error) {
 	return u, nil
 }
 
-func (s *Repository) FindUserByEmail(email string) (model.User, error) {
-	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$4", email)
+func (s *Repository) FindUserByEmail(loginReq model.LoginRequest) (model.User, error) {
+	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$4", loginReq.Email)
 
 	var u model.User
 
 	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
+		return u, err
+	}
+
+	if err := VerificarSenha(u.Senha, loginReq.Senha); err != nil {
 		return u, err
 	}
 
@@ -122,10 +126,10 @@ func (s *Repository) DeleteUser(id int64) error {
 	return nil
 }
 
-func (s *Repository) GerarHashSenha(senha string) ([]byte, error) {
+func GerarHashSenha(senha string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(senha), bcrypt.DefaultCost)
 }
 
-func (s *Repository) VerificarSenha(hashSalvo string, senhaLogin string) error {
+func VerificarSenha(hashSalvo string, senhaLogin string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashSalvo), []byte(senhaLogin))
 }

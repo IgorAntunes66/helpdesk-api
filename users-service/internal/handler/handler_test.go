@@ -9,9 +9,11 @@ import (
 	"helpdesk/users-service/internal/repository"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 )
@@ -192,20 +194,50 @@ func TestGetUserHandler_RepositoryError(t *testing.T) {
 func TestLoginUserHandler(t *testing.T) {
 	mockRepo := new(repository.MockUserRepository)
 
-	loginReq := model.LoginRequest{
+	senha := "senha123"
+
+	hashSenha, _ := repository.GerarHashSenha(senha)
+
+	mockUser := model.User{
+		ID:    1,
 		Email: "igorgantunes@hotmail.com",
-		Senha: "teste123",
+		Senha: string(hashSenha),
 	}
 
-	mockRepo.On("LoginUser", loginReq).Return(nil)
+	mockRepo.On("FindUserByEmail", "igorgantunes@hotmail.com").Return(mockUser, nil)
+
+	loginCredentials := model.LoginRequest{
+		Email: mockUser.Email,
+		Senha: senha,
+	}
 
 	apiServer := NewApiServer(mockRepo)
 
-	body, _ := json.Marshal(loginReq)
+	body, _ := json.Marshal(loginCredentials)
 	req := httptest.NewRequest("POST", "/users/login", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
 
 	apiServer.LoginUserHandler(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var responseBody map[string]string
+	err := json.NewDecoder(rr.Body).Decode(&responseBody)
+	assert.NoError(t, err)
+
+	tokenString, exists := responseBody["token"]
+	assert.True(t, exists, "A resposta deveria conter um token")
+	assert.NotEmpty(t, tokenString, "O token não pode estar vazio")
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("SEGREDOJWT")), nil
+	})
+	assert.NoError(t, err, "O token retornado deve ser válido")
+	assert.True(t, token.Valid, "O token deve ser valido")
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	assert.True(t, ok, "Não foi possivel ler as reinvidicações do token")
+	assert.Equal(t, float64(mockUser.ID), claims["id"], "O ID do usuario no token esta incorreto")
+
+	mockRepo.AssertExpectations(t)
 }
