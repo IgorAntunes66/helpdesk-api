@@ -7,6 +7,7 @@ import (
 	"errors"
 	"helpdesk/users-service/internal/model"
 	"helpdesk/users-service/internal/repository"
+	"helpdesk/users-service/internal/utils"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -222,22 +223,30 @@ func TestLoginUserHandler(t *testing.T) {
 
 	var responseBody map[string]string
 	err := json.NewDecoder(rr.Body).Decode(&responseBody)
-	assert.NoError(t, err)
+	assert.NoError(t, err, "O corpo da resposta deveria ser um JSON com a chave 'token'")
 
 	tokenString, exists := responseBody["token"]
 	assert.True(t, exists, "A resposta deveria conter um token")
 	assert.NotEmpty(t, tokenString, "O token não pode estar vazio")
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	claims := &utils.ClaimCustom{}
+
+	// 2. Use ParseWithClaims para decodificar o token diretamente na sua struct.
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		// Verificação de segurança crucial
+		assert.IsType(t, &jwt.SigningMethodHMAC{}, token.Method, "Método de assinatura inesperado!")
 		return []byte(os.Getenv("SEGREDOJWT")), nil
 	})
+
+	// 3. Verifique os resultados
 	assert.NoError(t, err, "O token retornado deve ser válido")
 	assert.True(t, token.Valid, "O token deve ser valido")
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	assert.True(t, ok, "Não foi possivel ler as reinvidicações do token")
+	// 4. Agora você pode acessar os campos da sua struct de forma segura e tipada!
 	assert.Equal(t, mockUser.ID, claims.UserID, "O ID do usuario no token esta incorreto")
 	assert.Equal(t, mockUser.Nome, claims.Nome, "O Nome do usuario no token esta incorreto")
+	assert.Equal(t, mockUser.Email, claims.Email, "O Email do usuario no token esta incorreto")
 
+	// Garante que a expectativa do mock foi atendida
 	mockRepo.AssertExpectations(t)
 }

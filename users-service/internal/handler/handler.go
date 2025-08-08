@@ -166,7 +166,9 @@ func (api *ApiServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(tokenJwt)
+
+	response := map[string]string{"token": tokenJwt}
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, "Erro ao codigicar o token JWT", http.StatusInternalServerError)
 		return
