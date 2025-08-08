@@ -19,7 +19,7 @@ const UserIDKey contextKey = "userID"
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 1. O ponto de inspeção: Extrair o Selo (Token) do cabeçalho
-		authHeader := r.Header.Get("Authotization")
+		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			http.Error(w, "Cabeçalho de autorização não fornecido", http.StatusUnauthorized)
 			return

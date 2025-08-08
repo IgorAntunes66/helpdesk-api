@@ -3,6 +3,7 @@ package main
 import (
 	"helpdesk/pkg"
 	"helpdesk/users-service/internal/handler"
+	"helpdesk/users-service/internal/middleware"
 	"helpdesk/users-service/internal/repository"
 	"log"
 	"net/http"
@@ -29,10 +30,14 @@ func main() {
 	r.Get("/health", handler.HealthCheckHandler)
 	r.Post("/users", apiServer.CreateUserHandler)
 	r.Post("/users/login", apiServer.LoginUserHandler)
-	r.Get("/users", apiServer.ListUsersHandler)
-	r.Get("/users/{id}", apiServer.GetUserHandler)
-	r.Put("/users/{id}", apiServer.UpdateUserHandler)
-	r.Delete("/users/{id}", apiServer.DeleteUserHandler)
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/users", apiServer.ListUsersHandler)
+		r.Get("/users/{id}", apiServer.GetUserHandler)
+		r.Put("/users/{id}", apiServer.UpdateUserHandler)
+		r.Delete("/users/{id}", apiServer.DeleteUserHandler)
+	})
 	http.ListenAndServe(":8082", r)
 }
 
