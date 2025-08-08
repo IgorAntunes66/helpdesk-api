@@ -65,6 +65,7 @@ func (api *ApiServer) ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(usuarios)
 	if err != nil {
 		http.Error(w, "Erro ao codificar a lista em JSON", http.StatusInternalServerError)

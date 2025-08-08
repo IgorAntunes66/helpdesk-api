@@ -27,9 +27,10 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Get("/health", handler.HealthCheckHandler)
+	r.Post("/users", apiServer.CreateUserHandler)
+	r.Post("/users/login", apiServer.LoginUserHandler)
 	r.Get("/users", apiServer.ListUsersHandler)
 	r.Get("/users/{id}", apiServer.GetUserHandler)
-	r.Post("/users", apiServer.CreateUserHandler)
 	r.Put("/users/{id}", apiServer.UpdateUserHandler)
 	r.Delete("/users/{id}", apiServer.DeleteUserHandler)
 	http.ListenAndServe(":8082", r)
