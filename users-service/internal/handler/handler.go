@@ -3,9 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"helpdesk/users-service/internal/middleware"
+	"helpdesk/pkg/auth"
+	"helpdesk/pkg/middleware"
 	"helpdesk/users-service/internal/model"
-	"helpdesk/users-service/internal/utils"
 	"net/http"
 	"strconv"
 
@@ -173,11 +173,11 @@ func (api *ApiServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	userDB, err := api.rep.FindUserByEmail(loginReq)
 	if err != nil {
-		http.Error(w, "Email ou senha", http.StatusNotFound)
+		http.Error(w, "Email ou senha incorretos", http.StatusUnauthorized)
 		return
 	}
 
-	tokenJwt, err := utils.GerarToken(userDB)
+	tokenJwt, err := auth.GerarToken(userDB.ID, userDB.Nome, userDB.Email)
 	if err != nil {
 		if err == jwt.ErrTokenExpired {
 			http.Error(w, "Token expirado", http.StatusUnauthorized)

@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"helpdesk/users-service/internal/middleware"
+	"helpdesk/pkg/auth"
+	"helpdesk/pkg/middleware"
 	"helpdesk/users-service/internal/model"
 	"helpdesk/users-service/internal/repository"
-	"helpdesk/users-service/internal/utils"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -231,7 +231,7 @@ func TestLoginUserHandler(t *testing.T) {
 	assert.True(t, exists, "A resposta deveria conter um token")
 	assert.NotEmpty(t, tokenString, "O token não pode estar vazio")
 
-	claims := &utils.ClaimCustom{}
+	claims := &auth.ClaimCustom{}
 
 	// 2. Use ParseWithClaims para decodificar o token diretamente na sua struct.
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
@@ -265,7 +265,7 @@ func TestGetMeHandler_Success(t *testing.T) {
 
 	mockRepo.On("FindUserByID", mockUser.ID).Return(mockUser, nil)
 
-	token, _ := utils.GerarToken(mockUser)
+	token, _ := auth.GerarToken(mockUser.ID, mockUser.Nome, mockUser.Email)
 
 	req := httptest.NewRequest("GET", "/users/me", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -295,7 +295,7 @@ func TestUpdateUserHandler_Forbidden(t *testing.T) {
 	apiServer := NewApiServer(mockRepo)
 
 	attackerUser := model.User{ID: 1, Email: "igorgantunes@hotmail.com", Nome: "Atacante"}
-	attackerToken, _ := utils.GerarToken(attackerUser)
+	attackerToken, _ := auth.GerarToken(attackerUser.ID, attackerUser.Nome, attackerUser.Email)
 
 	targetUserID := int64(2)
 

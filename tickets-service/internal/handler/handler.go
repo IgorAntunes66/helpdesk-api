@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"helpdesk/pkg/middleware"
 	"helpdesk/tickets-service/internal/model"
 	"helpdesk/tickets-service/internal/repository"
 	"net/http"
@@ -38,6 +39,9 @@ func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Erro ao decodificar o corpo da requisição: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	userIdReq := r.Context().Value(middleware.UserIDKey).(int64)
+	ticket.UserID = userIdReq
 
 	id, err := api.rep.CreateTicket(ticket)
 	if err != nil {

@@ -1,7 +1,8 @@
 package main
 
 import (
-	"helpdesk/pkg"
+	pkg "helpdesk/db"
+	"helpdesk/pkg/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -28,7 +29,10 @@ func main() {
 	apiServer := handler.NewApiServer(repo)
 
 	r := chi.NewRouter()
-	r.Post("/tickets", apiServer.CreateTicketHandler)
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Post("/tickets", apiServer.CreateTicketHandler)
+	})
 	r.Get("/health", handler.HealthCheckHandler)
 	r.Get("/tickets", apiServer.ListTicketsHandler)
 	r.Get("/tickets/{id}", apiServer.GetTicketHandler)
