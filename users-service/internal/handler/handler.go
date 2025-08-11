@@ -174,3 +174,25 @@ func (api *ApiServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (s *ApiServer) GetMeHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.Header.Get("userID")
+	userIdInt, err := strconv.Atoi(userID)
+	if err != nil {
+		http.Error(w, "Erro ao converter o ID para inteiro", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := s.rep.FindUserByID(int64(userIdInt))
+	if err != nil {
+		http.Error(w, "Erro ao encontrar o usuario no banco de dados", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err = json.NewEncoder(w).Encode(user); err != nil {
+		http.Error(w, "Erro ao codificar o usuario", http.StatusInternalServerError)
+		return
+	}
+}

@@ -33,6 +33,7 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+		r.Get("/users/me", apiServer.GetMeHandler)
 		r.Get("/users", apiServer.ListUsersHandler)
 		r.Get("/users/{id}", apiServer.GetUserHandler)
 		r.Put("/users/{id}", apiServer.UpdateUserHandler)
