@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"helpdesk/users-service/internal/middleware"
 	"helpdesk/users-service/internal/model"
 	"helpdesk/users-service/internal/utils"
 	"net/http"
@@ -176,14 +177,13 @@ func (api *ApiServer) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ApiServer) GetMeHandler(w http.ResponseWriter, r *http.Request) {
-	userID := r.Header.Get("userID")
-	userIdInt, err := strconv.Atoi(userID)
-	if err != nil {
-		http.Error(w, "Erro ao converter o ID para inteiro", http.StatusInternalServerError)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Não foi possivel extrair o ID do usuario do token", http.StatusInternalServerError)
 		return
 	}
 
-	user, err := s.rep.FindUserByID(int64(userIdInt))
+	user, err := s.rep.FindUserByID(int64(userID))
 	if err != nil {
 		http.Error(w, "Erro ao encontrar o usuario no banco de dados", http.StatusBadRequest)
 		return
