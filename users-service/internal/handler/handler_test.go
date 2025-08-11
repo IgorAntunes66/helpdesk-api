@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -289,3 +290,36 @@ func TestGetMeHandler_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+func TestUpdateUserHandler_Forbidden(t *testing.T) {
+	mockRepo := new(repository.MockUserRepository)
+	apiServer := NewApiServer(mockRepo)
+
+	attackerUser := model.User{ID: 1, Email: "igorgantunes@hotmail.com", Nome: "Atacante"}
+	attackerToken, _ := utils.GerarToken(attackerUser)
+
+	targetUserID := int64(2)
+
+	updatePayload := model.User{Nome: "Nome modificado"}
+
+	body, _ := json.Marshal(updatePayload)
+
+	req := httptest.NewRequest("PUT", "/users/"+strconv.FormatInt(targetUserID, 10), bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+attackerToken)
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Put("/users/{id}", apiServer.UpdateUserHandler)
+	})
+
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("id", strconv.FormatInt(targetUserID, 10))
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusForbidden, rr.Code)
+
+	mockRepo.AssertExpectations(t)
+}
