@@ -33,11 +33,12 @@ func main() {
 		r.Use(middleware.AuthMiddleware)
 		r.Post("/tickets", apiServer.CreateTicketHandler)
 		r.Get("/tickets/my-tickets", apiServer.GetMyTicketsHandler)
+		r.Put("/tickets/{id}", apiServer.UpdateTicketHandler)
+		r.Patch("/tickets/{id}/status", apiServer.UpdateTicketStatusHandler)
 	})
 	r.Get("/health", handler.HealthCheckHandler)
 	r.Get("/tickets", apiServer.ListTicketsHandler)
 	r.Get("/tickets/{id}", apiServer.GetTicketHandler)
-	r.Put("/tickets/{id}", apiServer.UpdateTicketHandler)
 	r.Delete("/tickets/{id}", apiServer.DeleteTicketHandler)
 
 	r.Post("/tickets/{id}/comments", apiServer.CreateCommentHandler)

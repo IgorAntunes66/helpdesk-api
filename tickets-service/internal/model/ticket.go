@@ -28,3 +28,11 @@ type Comentario struct {
 	UserID    int64     `json:"user_id"`
 	TicketID  int64     `json:"ticket_id"`
 }
+
+type UpdateTicketPayload struct {
+	Titulo      string   `json:"titulo"`
+	Descricao   string   `json:"descricao"`
+	Prioridade  string   `json:"prioridade"`
+	Anexos      []string `json:"anexos"`
+	CategoriaID int64    `json:"categoria_id"`
+}

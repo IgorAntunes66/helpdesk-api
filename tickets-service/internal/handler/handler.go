@@ -126,14 +126,35 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var ticket model.Ticket
-	err = json.NewDecoder(r.Body).Decode(&ticket)
+	idReq := r.Context().Value(middleware.UserIDKey)
+
+	var ticketReq model.UpdateTicketPayload
+	err = json.NewDecoder(r.Body).Decode(&ticketReq)
 	if err != nil {
 		http.Error(w, "Erro ao decodificar o corpo da requisição", http.StatusBadRequest)
 		return
 	}
 
-	err = api.rep.UpdateTicket(idInt, ticket)
+	var ticketOg model.Ticket
+	ticketOg, err = api.rep.GetTicketByID(idInt)
+	if err != nil {
+		http.Error(w, "Erro ao obter o ticket no banco de dados", http.StatusInternalServerError)
+		return
+	}
+
+	if idReq != ticketOg.UserID {
+		http.Error(w, "Permissão não concedida", http.StatusUnauthorized)
+	}
+
+	ticketAtt := model.Ticket{
+		Titulo:      ticketReq.Titulo,
+		Descricao:   ticketReq.Descricao,
+		Prioridade:  ticketReq.Prioridade,
+		Anexos:      ticketReq.Anexos,
+		CategoriaID: ticketReq.CategoriaID,
+	}
+
+	err = api.rep.UpdateTicket(idInt, ticketAtt)
 	if err == pgx.ErrNoRows {
 		http.Error(w, "Registro não encontrado", http.StatusNotFound)
 		return
@@ -141,6 +162,30 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Erro ao modificar registro no banco de dados", http.StatusBadRequest)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (api *ApiServer) UpdateTicketStatusHandler(w http.ResponseWriter, r *http.Request) {
+	type updateStatusRequest struct {
+		ID     int64  `json:"id"`
+		Status string `json:"status"`
+	}
+
+	var statusReq updateStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&statusReq); err != nil {
+		http.Error(w, "Erro ao decodificar a requisição", http.StatusBadRequest)
+		return
+	}
+
+	statusAtt := model.Ticket{
+		Status: statusReq.Status,
+	}
+
+	if err := api.rep.UpdateTicket(int(statusReq.ID), statusAtt); err != nil {
+		http.Error(w, "Erro ao atualizar informacoes no banco de dados", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
