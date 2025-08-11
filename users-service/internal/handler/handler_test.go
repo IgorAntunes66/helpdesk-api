@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"helpdesk/users-service/internal/middleware"
 	"helpdesk/users-service/internal/model"
 	"helpdesk/users-service/internal/repository"
 	"helpdesk/users-service/internal/utils"
@@ -248,5 +249,42 @@ func TestLoginUserHandler(t *testing.T) {
 	assert.Equal(t, mockUser.Email, claims.Email, "O Email do usuario no token esta incorreto")
 
 	// Garante que a expectativa do mock foi atendida
+	mockRepo.AssertExpectations(t)
+}
+
+func TestGetMeHandler_Success(t *testing.T) {
+	mockRepo := new(repository.MockUserRepository)
+	apiServer := NewApiServer(mockRepo)
+
+	mockUser := model.User{
+		ID:    1,
+		Email: "igorgantunes@hotmail.com",
+		Nome:  "Igor",
+	}
+
+	mockRepo.On("FindUserByID", mockUser.ID).Return(mockUser, nil)
+
+	token, _ := utils.GerarToken(mockUser)
+
+	req := httptest.NewRequest("GET", "/users/me", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rr := httptest.NewRecorder()
+
+	router := chi.NewRouter()
+	router.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/users/me", apiServer.GetMeHandler)
+	})
+
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var userDB model.User
+	_ = json.NewDecoder(rr.Body).Decode(&userDB)
+
+	assert.Equal(t, mockUser.ID, userDB.ID)
+	assert.Equal(t, mockUser.Nome, userDB.Nome)
+
 	mockRepo.AssertExpectations(t)
 }

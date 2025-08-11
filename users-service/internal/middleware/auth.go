@@ -52,7 +52,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		//Extraimos o ID do usuario que colocamos no token durante o login.
 		// O JWT armazena números como float64, então precisamos converter.
-		userID := int64(claims["id"].(float64))
+		userID := int64(claims["userID"].(float64))
 
 		// Criamos um novo contexto que carrega o ID do usuario.
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
