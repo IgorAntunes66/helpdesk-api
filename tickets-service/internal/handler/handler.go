@@ -146,15 +146,13 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Permissão não concedida", http.StatusUnauthorized)
 	}
 
-	ticketAtt := model.Ticket{
-		Titulo:      ticketReq.Titulo,
-		Descricao:   ticketReq.Descricao,
-		Prioridade:  ticketReq.Prioridade,
-		Anexos:      ticketReq.Anexos,
-		CategoriaID: ticketReq.CategoriaID,
-	}
+	ticketOg.Titulo = ticketReq.Titulo
+	ticketOg.Descricao = ticketReq.Descricao
+	ticketOg.Prioridade = ticketReq.Prioridade
+	ticketOg.Anexos = ticketReq.Anexos
+	ticketOg.CategoriaID = ticketReq.CategoriaID
 
-	err = api.rep.UpdateTicket(idInt, ticketAtt)
+	err = api.rep.UpdateTicket(idInt, ticketOg)
 	if err == pgx.ErrNoRows {
 		http.Error(w, "Registro não encontrado", http.StatusNotFound)
 		return
@@ -177,11 +175,22 @@ func (api *ApiServer) UpdateTicketStatusHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	statusAtt := model.Ticket{
-		Status: statusReq.Status,
+	ticketOg, err := api.rep.GetTicketByID(int(statusReq.ID))
+	if err != nil {
+		http.Error(w, "Erro ao consultar o ticket original", http.StatusBadRequest)
+		return
 	}
 
-	if err := api.rep.UpdateTicket(int(statusReq.ID), statusAtt); err != nil {
+	idReq := r.Context().Value(middleware.UserIDKey)
+
+	if idReq != ticketOg.UserID {
+		http.Error(w, "Permissão não concedida", http.StatusUnauthorized)
+		return
+	}
+
+	ticketOg.Status = statusReq.Status
+
+	if err := api.rep.UpdateTicket(int(ticketOg.ID), ticketOg); err != nil {
 		http.Error(w, "Erro ao atualizar informacoes no banco de dados", http.StatusInternalServerError)
 		return
 	}
