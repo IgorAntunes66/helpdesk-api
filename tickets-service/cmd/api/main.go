@@ -32,6 +32,7 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Post("/tickets", apiServer.CreateTicketHandler)
+		r.Get("/tickets/my-tickets", apiServer.GetMyTicketsHandler)
 	})
 	r.Get("/health", handler.HealthCheckHandler)
 	r.Get("/tickets", apiServer.ListTicketsHandler)
