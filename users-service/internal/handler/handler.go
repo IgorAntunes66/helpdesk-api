@@ -110,8 +110,18 @@ func (api *ApiServer) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 
 	var u model.User
 
-	err = json.NewDecoder(r.Body).Decode(&u)
+	idReq, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Não foi possivel extrair o ID do usuario do token", http.StatusInternalServerError)
+		return
+	}
 
+	if int64(idInt) != idReq {
+		http.Error(w, "Permissão não concedida", http.StatusForbidden)
+		return
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&u)
 	if err != nil {
 		http.Error(w, "Erro ao decodificar o corpo da requisição", http.StatusInternalServerError)
 		return
@@ -129,6 +139,17 @@ func (api *ApiServer) DeleteUserHandler(w http.ResponseWriter, r *http.Request) 
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		http.Error(w, "Erro ao converter o ID para inteiro", http.StatusBadRequest)
+		return
+	}
+
+	idReq, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Não foi possivel extrair o ID do usuario do token", http.StatusInternalServerError)
+		return
+	}
+
+	if int64(idInt) != idReq {
+		http.Error(w, "Permissão não concedida", http.StatusForbidden)
 		return
 	}
 

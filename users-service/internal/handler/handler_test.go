@@ -288,3 +288,4 @@ func TestGetMeHandler_Success(t *testing.T) {
 
 	mockRepo.AssertExpectations(t)
 }
+
