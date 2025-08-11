@@ -101,6 +101,23 @@ func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (api *ApiServer) GetMyTicketsHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.Context().Value(middleware.UserIDKey).(int64)
+
+	lista, err := api.rep.GetTicketByUser(int(id))
+	if err != nil {
+		http.Error(w, "Erro ao consultar tickets do usuario", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err = json.NewEncoder(w).Encode(lista); err != nil {
+		http.Error(w, "Erro ao codificar a lista de tarefas", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	idInt, err := strconv.Atoi(id)

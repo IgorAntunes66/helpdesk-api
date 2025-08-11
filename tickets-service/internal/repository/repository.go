@@ -60,6 +60,26 @@ func (s *Repository) GetTicketByID(id int) (model.Ticket, error) {
 	return ticket, nil
 }
 
+func (s *Repository) GetTicketByUser(id int) ([]model.Ticket, error) {
+	rows, err := s.db.Query(context.Background(), "SELECT * FROM tickets WHERE user_id=$1", id)
+	if err != nil {
+		return []model.Ticket{}, err
+	}
+
+	var ticket model.Ticket
+	var lista []model.Ticket
+
+	for rows.Next() {
+		err = rows.Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
+		if err != nil {
+			return []model.Ticket{}, err
+		}
+		lista = append(lista, ticket)
+	}
+
+	return lista, nil
+}
+
 func (s *Repository) UpdateTicket(id int, ticket model.Ticket) error {
 	_, err := s.db.Exec(context.Background(), "UPDATE tickets SET titulo=$1, descricao=$2, status=$3, diagnostico=$4, solucao=$5, prioridade=$6, data_abertura=$7, data_fechamento=$8, data_atualizacao=$9, anexos=$10, tags=$11, categoria_id=$12, responsavel_id=$13, user_id=$14 WHERE id=$15", &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID, id)
 	if errors.Is(err, pgx.ErrNoRows) {
