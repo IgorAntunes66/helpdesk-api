@@ -5,6 +5,7 @@ import (
 	"helpdesk/pkg/middleware"
 	"helpdesk/tickets-service/internal/model"
 	"helpdesk/tickets-service/internal/repository"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -57,6 +58,10 @@ func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request
 		http.Error(w, "Erro ao codificar o ticket em json", http.StatusInternalServerError)
 		return
 	}
+
+	go func() {
+		log.Println("Simulando o envio de notificação para o ticket: ", ticket.ID)
+	}()
 }
 
 func (api *ApiServer) ListTicketsHandler(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +148,7 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if idReq != ticketOg.UserID {
-		http.Error(w, "Permissão não concedida", http.StatusUnauthorized)
+		http.Error(w, "Permissão não concedida", http.StatusForbidden)
 	}
 
 	ticketOg.Titulo = ticketReq.Titulo
@@ -184,7 +189,7 @@ func (api *ApiServer) UpdateTicketStatusHandler(w http.ResponseWriter, r *http.R
 	idReq := r.Context().Value(middleware.UserIDKey)
 
 	if idReq != ticketOg.UserID {
-		http.Error(w, "Permissão não concedida", http.StatusUnauthorized)
+		http.Error(w, "Permissão não concedida", http.StatusForbidden)
 		return
 	}
 
@@ -215,7 +220,7 @@ func (api *ApiServer) DeleteTicketHandler(w http.ResponseWriter, r *http.Request
 	idReq := r.Context().Value(middleware.UserIDKey).(int64)
 
 	if ticket.UserID != idReq {
-		http.Error(w, "Permissão não concedida", http.StatusUnauthorized)
+		http.Error(w, "Permissão não concedida", http.StatusForbidden)
 		return
 	}
 
