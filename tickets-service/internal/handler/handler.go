@@ -206,6 +206,19 @@ func (api *ApiServer) DeleteTicketHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	ticket, err := api.rep.GetTicketByID(idInt)
+	if err != nil {
+		http.Error(w, "Ticket não encontrado no banco de dados", http.StatusBadRequest)
+		return
+	}
+
+	idReq := r.Context().Value(middleware.UserIDKey).(int64)
+
+	if ticket.UserID != idReq {
+		http.Error(w, "Permissão não concedida", http.StatusUnauthorized)
+		return
+	}
+
 	err = api.rep.DeleteTicket(idInt)
 	if err == pgx.ErrNoRows {
 		http.Error(w, "Registro não encontrado", http.StatusNotFound)
