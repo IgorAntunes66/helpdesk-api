@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -59,8 +60,19 @@ func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	meuCanal := make(chan error)
 	go func() {
 		log.Println("Simulando o envio de notificação para o ticket: ", ticket.ID)
+		time.Sleep(2 * time.Second)
+		meuCanal <- nil
+	}()
+	go func() {
+		resultado := <-meuCanal
+		if resultado == nil {
+			log.Println("Go Routine executada com sucesso")
+		} else {
+			log.Println("Erro ao executar Go Routine")
+		}
 	}()
 }
 
