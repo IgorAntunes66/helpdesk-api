@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"helpdesk/pkg/auth"
+	"helpdesk/users-service/auth"
 	"net/http"
 	"strings"
 )

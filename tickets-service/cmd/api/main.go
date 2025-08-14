@@ -2,7 +2,7 @@ package main
 
 import (
 	pkg "helpdesk/db"
-	"helpdesk/pkg/middleware"
+	"helpdesk/tickets-service/middleware"
 	"log"
 	"net/http"
 	"os"
@@ -17,8 +17,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-var jobs = make(chan int64)
-
 func main() {
 	runMigrations()
 
@@ -27,8 +25,10 @@ func main() {
 		log.Fatalf("Erro ao iniciar o banco de dados: %v", err)
 	}
 
+	var jobs = make(chan int64)
+
 	for i := 0; i < 3; i++ {
-		go RunWorkers()
+		go RunWorkers(jobs)
 	}
 
 	repo := repository.NewRepository(db)
@@ -76,7 +76,7 @@ func runMigrations() {
 	log.Println("Migrações aplicadas com sucesso!")
 }
 
-func RunWorkers() {
+func RunWorkers(jobs <-chan int64) {
 	for id := range jobs {
 		log.Println("Simulando o envio de notificação para o ticket: ", id)
 		time.Sleep(2 * time.Second)

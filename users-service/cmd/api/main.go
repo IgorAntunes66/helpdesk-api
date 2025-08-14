@@ -2,9 +2,9 @@ package main
 
 import (
 	pkg "helpdesk/db"
-	"helpdesk/pkg/middleware"
 	"helpdesk/users-service/internal/handler"
 	"helpdesk/users-service/internal/repository"
+	"helpdesk/users-service/middleware"
 	"log"
 	"net/http"
 	"os"

@@ -2,9 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"helpdesk/pkg/middleware"
 	"helpdesk/tickets-service/internal/model"
 	"helpdesk/tickets-service/internal/repository"
+	"helpdesk/tickets-service/middleware"
 	"net/http"
 	"strconv"
 

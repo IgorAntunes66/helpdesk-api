@@ -3,9 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"helpdesk/pkg/auth"
-	"helpdesk/pkg/middleware"
+	"helpdesk/users-service/auth"
 	"helpdesk/users-service/internal/model"
+	"helpdesk/users-service/middleware"
 	"net/http"
 	"strconv"
 
