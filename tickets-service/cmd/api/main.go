@@ -17,6 +17,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
+var jobs = make(chan int64)
+
 func main() {
 	runMigrations()
 
@@ -25,13 +27,8 @@ func main() {
 		log.Fatalf("Erro ao iniciar o banco de dados: %v", err)
 	}
 
-	jobs := make(chan int64)
-
 	for i := 0; i < 3; i++ {
-		for id := range jobs {
-			log.Println("Simulando o envio de notificação para o ticket: ", id)
-			time.Sleep(2 * time.Second)
-		}
+		go RunWorkers()
 	}
 
 	repo := repository.NewRepository(db)
@@ -77,4 +74,11 @@ func runMigrations() {
 	}
 
 	log.Println("Migrações aplicadas com sucesso!")
+}
+
+func RunWorkers() {
+	for id := range jobs {
+		log.Println("Simulando o envio de notificação para o ticket: ", id)
+		time.Sleep(2 * time.Second)
+	}
 }
