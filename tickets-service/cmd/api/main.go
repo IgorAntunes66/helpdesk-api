@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"helpdesk/tickets-service/internal/handler"
 	"helpdesk/tickets-service/internal/repository"
@@ -24,9 +25,18 @@ func main() {
 		log.Fatalf("Erro ao iniciar o banco de dados: %v", err)
 	}
 
+	jobs := make(chan int64)
+
+	for i := 0; i < 3; i++ {
+		for id := range jobs {
+			log.Println("Simulando o envio de notificação para o ticket: ", id)
+			time.Sleep(2 * time.Second)
+		}
+	}
+
 	repo := repository.NewRepository(db)
 
-	apiServer := handler.NewApiServer(repo)
+	apiServer := handler.NewApiServer(repo, jobs)
 
 	r := chi.NewRouter()
 	r.Group(func(r chi.Router) {
