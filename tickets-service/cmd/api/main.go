@@ -50,7 +50,7 @@ func main() {
 
 	r.Post("/tickets/{id}/comments", apiServer.CreateCommentHandler)
 	r.Get("/tickets/{id}/comments", apiServer.ListCommentsByTicketHandler)
-	r.Get("/tickets/{id}/users/comments/{id}", apiServer.ListCommentsByUserHandler)
+	r.Get("/tickets/comments/users/{id}", apiServer.ListCommentsByUserHandler)
 	r.Put("/tickets/comments/{id}", apiServer.UpdateCommentHandler)
 	r.Delete("/tickets/comments/{id}", apiServer.DeleteCommentHandler)
 

@@ -1,0 +1,54 @@
+# A versão do docker compose
+version: '3.8'
+
+# A lista de todos os serviços
+services:
+  db:
+    image: postgres:13-alpine #Usei uma imagem oficial e leve do Postgres.
+    container_name: helpdesk-db #Usei um nome fixo para o nosso DB
+    environment:
+      - POSTGRES_USER=postgre
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgressql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgre -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servico de usuarios
+  users-service:
+    container_name: users-service
+    build: 
+      context: .
+      dockerfile: ./users-service/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - CHAVEDB=postgres://postgre:123@db:5432/postgres?sslmode=disable
+      - SEGREDOJWT=opedroégayzinhoeadoradarocuzinho
+    depends_on:
+      db:
+        condition: service_healthy
+
+  tickets-service:
+    container_name: tickets-service
+    build: 
+      context: .
+      dockerfile: ./tickets-service/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - CHAVEDB=postgres://postgre:123@db:5432/postgres?sslmode=disable
+      - SEGREDOJWT=opedroégayzinhoeadoradarocuzinho
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
