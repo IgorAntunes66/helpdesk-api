@@ -2,11 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"helpdesk/tickets-service/internal/model"
 	"helpdesk/tickets-service/internal/repository"
 	"helpdesk/tickets-service/middleware"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -95,6 +98,60 @@ func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erro ao obter dados no banco de dados", http.StatusBadRequest)
 		return
 	}
+
+	url := fmt.Sprintf("http://users-service:8082/users/%d", ticket.UserID)
+	fmt.Printf("INFO: Serviço de tickets fazendo uma requisição interna para: %s\n", url)
+
+	//Definindo um cliente com timeout
+
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Header de autorização ausente", http.StatusUnauthorized)
+		return
+	}
+
+	headerParts := strings.Split(authHeader, " ")
+	if len(headerParts) != 2 || strings.ToLower(headerParts[0]) != "bearer" {
+		http.Error(w, "Header de autorização mal formatado", http.StatusUnauthorized)
+		return
+	}
+
+	tokenString := headerParts[1]
+
+	cliente := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	reqInternal, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Erro ao criar requisição interna: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	reqInternal.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenString))
+	reqInternal.Header.Set("Content-Type", "application/json")
+
+	//Fazendo a requisição
+	resposta, err := cliente.Do(reqInternal)
+	if err != nil {
+		http.Error(w, "ERRO: Falha ao fazer a requisição para o serviço de usuarios", http.StatusBadRequest)
+		return
+	}
+	defer resposta.Body.Close()
+
+	//Verificando se o status da resposta foi bem sucedido (status code 2xx)
+	if resposta.StatusCode != http.StatusOK {
+		http.Error(w, "Erro ao consultar serviço de usuarios", http.StatusBadRequest)
+		return
+	}
+
+	var ticketAuthor model.TicketAuthor
+	if err = json.NewDecoder(resposta.Body).Decode(&ticketAuthor); err != nil {
+		http.Error(w, "Erro ao decodificar o corpo da resposta do users-service", http.StatusBadRequest)
+		return
+	}
+
+	ticket.Author = ticketAuthor
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

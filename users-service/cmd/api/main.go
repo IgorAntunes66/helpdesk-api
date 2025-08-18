@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	pkg "helpdesk/db"
 	"helpdesk/users-service/internal/handler"
 	"helpdesk/users-service/internal/repository"
@@ -40,6 +41,7 @@ func main() {
 		r.Delete("/users/{id}", apiServer.DeleteUserHandler)
 	})
 	http.ListenAndServe(":8082", r)
+	fmt.Println("Servidor HTTP iniciado na porta 8082")
 }
 
 func runMigrations() {

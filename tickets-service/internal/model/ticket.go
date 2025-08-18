@@ -19,6 +19,7 @@ type Ticket struct {
 	CategoriaID     int64        `json:"categoria_id"`
 	ResponsavelID   int64        `json:"responsavel_id"`
 	UserID          int64        `json:"user_id"`
+	Author          TicketAuthor `json:"author"`
 }
 
 type Comentario struct {
@@ -35,4 +36,10 @@ type UpdateTicketPayload struct {
 	Prioridade  string   `json:"prioridade"`
 	Anexos      []string `json:"anexos"`
 	CategoriaID int64    `json:"categoria_id"`
+}
+
+type TicketAuthor struct {
+	ID    int64  `json:"id"`
+	Nome  string `json:"nome"`
+	Email string `json:"email"`
 }
