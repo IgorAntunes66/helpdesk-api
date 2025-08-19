@@ -157,7 +157,7 @@ func (s *Repository) ListCommentsByUserID(id int) ([]model.Comentario, error) {
 }
 
 func (s *Repository) UpdateComment(id int, comment model.Comentario) error {
-	_, err := s.db.Exec(context.Background(), "UPDATE comentarios SET descricao=$1, data=$2, user_id=$3, ticket_id=$4 WHERE id=$5", &comment.Descricao, &comment.Data, &comment.UserID, &comment.TicketID, id)
+	_, err := s.db.Exec(context.Background(), "UPDATE comentarios SET descricao=$1, data=$2, user_id=$3 WHERE id=$4", &comment.Descricao, &comment.Data, &comment.UserID, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return err
 	} else if err != nil {

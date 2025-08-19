@@ -183,6 +183,7 @@ func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 	//Fazendo a requisição
 	resposta, err := cliente.Do(reqInternal)
 	if err != nil {
+		log.Printf("ERRO: Falha ao fazer requisição para o serviço de usuarios: %v", err)
 		http.Error(w, "ERRO: Falha ao fazer a requisição para o serviço de usuarios", http.StatusBadRequest)
 		return
 	}
@@ -354,15 +355,13 @@ func (api *ApiServer) CreateCommentHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	idUser := r.Header.Get("userID")
-	log.Println(idUser)
-	idUserInt, err := strconv.Atoi(idUser)
-	if err != nil {
-		http.Error(w, "Erro ao converter o ID do usuario para inteiro", http.StatusInternalServerError)
+	idUser, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Não foi possivel extrair o ID do usuario do token", http.StatusInternalServerError)
 		return
 	}
 
-	comentario.UserID = int64(idUserInt)
+	comentario.UserID = idUser
 	comentario.TicketID = int64(idInt)
 
 	idComent, err := api.rep.CreateComment(comentario)
@@ -430,7 +429,15 @@ func (api *ApiServer) UpdateCommentHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	idUser, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Erro ao obter o ID do usuario do cabeçalho da requisição", http.StatusUnauthorized)
+		return
+	}
+
 	var comment model.Comentario
+	comment.UserID = idUser
+
 	if err = json.NewDecoder(r.Body).Decode(&comment); err != nil {
 		http.Error(w, "Erro ao decodificar o corpo da requisição: "+err.Error(), http.StatusBadRequest)
 		return
