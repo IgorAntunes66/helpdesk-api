@@ -116,6 +116,17 @@ func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
 	return comment.ID, nil
 }
 
+func (s *Repository) GetCommentByID(id int) (model.Comentario, error) {
+	var comentario model.Comentario
+
+	err := s.db.QueryRow(context.Background(), "SELECT * FROM comentarios WHERE id=$1", id).Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID)
+	if err != nil {
+		return model.Comentario{}, err
+	}
+
+	return comentario, nil
+}
+
 func (s *Repository) ListCommentsByTicketID(id int) ([]model.Comentario, error) {
 	var lista []model.Comentario
 	var comentario model.Comentario

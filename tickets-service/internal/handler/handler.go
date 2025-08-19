@@ -443,6 +443,17 @@ func (api *ApiServer) UpdateCommentHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	commentOg, err := api.rep.GetCommentByID(id)
+	if err != nil {
+		http.Error(w, "Erro ao ocnsultar o ticket no banco de dados.", http.StatusInternalServerError)
+		return
+	}
+
+	if commentOg.UserID != idUser {
+		http.Error(w, "Acesso não concedido!", http.StatusForbidden)
+		return
+	}
+
 	if err = api.rep.UpdateComment(id, comment); err != nil {
 		if err == pgx.ErrNoRows {
 			http.Error(w, "Comentário não encontrado", http.StatusNotFound)
