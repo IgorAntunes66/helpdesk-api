@@ -473,6 +473,23 @@ func (api *ApiServer) DeleteCommentHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	commentOg, err := api.rep.GetCommentByID(id)
+	if err != nil {
+		http.Error(w, "Erro ao ocnsultar o ticket no banco de dados.", http.StatusInternalServerError)
+		return
+	}
+
+	idUser, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Erro ao obter o ID do usuario do cabeçalho da requisição", http.StatusUnauthorized)
+		return
+	}
+
+	if commentOg.UserID != idUser {
+		http.Error(w, "Acesso não concedido!", http.StatusForbidden)
+		return
+	}
+
 	err = api.rep.DeleteComment(id)
 	if err == pgx.ErrNoRows {
 		http.Error(w, "Comentário não encontrado", http.StatusNotFound)
