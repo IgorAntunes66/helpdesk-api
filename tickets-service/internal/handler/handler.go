@@ -6,6 +6,7 @@ import (
 	"helpdesk/tickets-service/internal/model"
 	"helpdesk/tickets-service/internal/repository"
 	"helpdesk/tickets-service/middleware"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -55,6 +56,56 @@ func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request
 	}
 	ticket.ID = id
 
+	url := fmt.Sprintf("http://users-service:8082/users/%d", ticket.UserID)
+	fmt.Printf("INFO: Serviço de tickets fazendo uma requisição interna para: %s\n", url)
+
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Header de autorização ausente", http.StatusUnauthorized)
+		return
+	}
+
+	headerParts := strings.Split(authHeader, " ")
+	if len(headerParts) != 2 || strings.ToLower(headerParts[0]) != "bearer" {
+		http.Error(w, "Header de autorização mal formatado", http.StatusUnauthorized)
+		return
+	}
+
+	tokenString := headerParts[1]
+
+	cliente := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	reqInternal, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Erro ao criar requisição interna: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	reqInternal.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenString))
+	reqInternal.Header.Set("Content-Type", "application/json")
+
+	resposta, err := cliente.Do(reqInternal)
+	if err != nil {
+		http.Error(w, "ERRO: Falha ao fazer a requisição para o serviço de usuarios", http.StatusBadRequest)
+		return
+	}
+	defer resposta.Body.Close()
+
+	if resposta.StatusCode != http.StatusOK {
+		http.Error(w, "Erro ao consultar serviço de usuarios", http.StatusBadRequest)
+		return
+	}
+
+	var ticketAuthor model.TicketAuthor
+	if err = json.NewDecoder(resposta.Body).Decode(&ticketAuthor); err != nil {
+		http.Error(w, "Erro ao decodificar o corpo da resposta do users-service", http.StatusBadRequest)
+		return
+	}
+
+	ticket.Author = ticketAuthor
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(ticket)
@@ -101,8 +152,6 @@ func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 
 	url := fmt.Sprintf("http://users-service:8082/users/%d", ticket.UserID)
 	fmt.Printf("INFO: Serviço de tickets fazendo uma requisição interna para: %s\n", url)
-
-	//Definindo um cliente com timeout
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -305,6 +354,15 @@ func (api *ApiServer) CreateCommentHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	idUser := r.Header.Get("userID")
+	log.Println(idUser)
+	idUserInt, err := strconv.Atoi(idUser)
+	if err != nil {
+		http.Error(w, "Erro ao converter o ID do usuario para inteiro", http.StatusInternalServerError)
+		return
+	}
+
+	comentario.UserID = int64(idUserInt)
 	comentario.TicketID = int64(idInt)
 
 	idComent, err := api.rep.CreateComment(comentario)

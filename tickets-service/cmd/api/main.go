@@ -39,20 +39,19 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Post("/tickets", apiServer.CreateTicketHandler)
+		r.Post("/tickets/{id}/comments", apiServer.CreateCommentHandler)
 		r.Get("/tickets/my-tickets", apiServer.GetMyTicketsHandler)
+		r.Get("/tickets", apiServer.ListTicketsHandler)
+		r.Get("/tickets/{id}", apiServer.GetTicketHandler)
+		r.Get("/tickets/{id}/comments", apiServer.ListCommentsByTicketHandler)
+		r.Get("/tickets/comments/users/{id}", apiServer.ListCommentsByUserHandler)
 		r.Put("/tickets/{id}", apiServer.UpdateTicketHandler)
+		r.Put("/tickets/comments/{id}", apiServer.UpdateCommentHandler)
 		r.Patch("/tickets/{id}/status", apiServer.UpdateTicketStatusHandler)
 		r.Delete("/tickets/{id}", apiServer.DeleteTicketHandler)
+		r.Delete("/tickets/comments/{id}", apiServer.DeleteCommentHandler)
 	})
 	r.Get("/health", handler.HealthCheckHandler)
-	r.Get("/tickets", apiServer.ListTicketsHandler)
-	r.Get("/tickets/{id}", apiServer.GetTicketHandler)
-
-	r.Post("/tickets/{id}/comments", apiServer.CreateCommentHandler)
-	r.Get("/tickets/{id}/comments", apiServer.ListCommentsByTicketHandler)
-	r.Get("/tickets/comments/users/{id}", apiServer.ListCommentsByUserHandler)
-	r.Put("/tickets/comments/{id}", apiServer.UpdateCommentHandler)
-	r.Delete("/tickets/comments/{id}", apiServer.DeleteCommentHandler)
 
 	log.Println("Servidor HTTP iniciado na porta 8080")
 	if err := http.ListenAndServe(":8080", r); err != nil {
