@@ -84,12 +84,12 @@ func (s *Repository) FindUserByID(id int64) (model.User, error) {
 func (s *Repository) FindUserByEmail(loginReq model.LoginRequest) (model.User, error) {
 	var u model.User
 
-	if err := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$1", loginReq.Email).Scan(); err != nil {
-		return u, err
+	if err := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$1", loginReq.Email).Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
+		return model.User{}, err
 	}
 
 	if err := VerificarSenha(u.Senha, loginReq.Senha); err != nil {
-		return u, err
+		return model.User{}, err
 	}
 
 	return u, nil
