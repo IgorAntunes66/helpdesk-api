@@ -2,14 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"helpdesk/tickets-service/auth"
 	"helpdesk/tickets-service/internal/model"
 	"helpdesk/tickets-service/internal/repository"
 	"helpdesk/tickets-service/middleware"
-	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -29,24 +29,30 @@ func NewApiServer(rep *repository.Repository, jobs chan int64) *ApiServer {
 }
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	status := map[string]any{
+	status := map[string]string{
 		"status": "ok",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		http.Error(w, "Erro ao encodificar a resposta json", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request) {
 	var ticket model.Ticket
-	err := json.NewDecoder(r.Body).Decode(&ticket)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&ticket); err != nil {
 		http.Error(w, "Erro ao decodificar o corpo da requisição: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userIdReq := r.Context().Value(middleware.UserIDKey).(int64)
+	userIdReq, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Erro ao extrair o ID do usuario da requisição", http.StatusInternalServerError)
+		return
+	}
 	ticket.UserID = userIdReq
 
 	id, err := api.rep.CreateTicket(ticket)
@@ -56,64 +62,18 @@ func (api *ApiServer) CreateTicketHandler(w http.ResponseWriter, r *http.Request
 	}
 	ticket.ID = id
 
-	url := fmt.Sprintf("http://users-service:8082/users/%d", ticket.UserID)
-	fmt.Printf("INFO: Serviço de tickets fazendo uma requisição interna para: %s\n", url)
-
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Header de autorização ausente", http.StatusUnauthorized)
-		return
-	}
-
-	headerParts := strings.Split(authHeader, " ")
-	if len(headerParts) != 2 || strings.ToLower(headerParts[0]) != "bearer" {
-		http.Error(w, "Header de autorização mal formatado", http.StatusUnauthorized)
-		return
-	}
-
-	tokenString := headerParts[1]
-
-	cliente := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	reqInternal, err := http.NewRequest("GET", url, nil)
+	ticket.Author, err = GetTicketAuthor(userIdReq, r)
 	if err != nil {
-		http.Error(w, "Erro ao criar requisição interna: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Erro ao obter dados do autor do ticker.", http.StatusBadRequest)
 		return
 	}
-
-	reqInternal.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenString))
-	reqInternal.Header.Set("Content-Type", "application/json")
-
-	resposta, err := cliente.Do(reqInternal)
-	if err != nil {
-		http.Error(w, "ERRO: Falha ao fazer a requisição para o serviço de usuarios", http.StatusBadRequest)
-		return
-	}
-	defer resposta.Body.Close()
-
-	if resposta.StatusCode != http.StatusOK {
-		http.Error(w, "Erro ao consultar serviço de usuarios", http.StatusBadRequest)
-		return
-	}
-
-	var ticketAuthor model.TicketAuthor
-	if err = json.NewDecoder(resposta.Body).Decode(&ticketAuthor); err != nil {
-		http.Error(w, "Erro ao decodificar o corpo da resposta do users-service", http.StatusBadRequest)
-		return
-	}
-
-	ticket.Author = ticketAuthor
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(ticket)
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(ticket); err != nil {
 		http.Error(w, "Erro ao codificar o ticket em json", http.StatusInternalServerError)
 		return
 	}
-
 	api.jobs <- ticket.ID
 }
 
@@ -126,8 +86,7 @@ func (api *ApiServer) ListTicketsHandler(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(lista)
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(lista); err != nil {
 		http.Error(w, "Erro ao converter a lista para json", http.StatusInternalServerError)
 		return
 	}
@@ -150,63 +109,17 @@ func (api *ApiServer) GetTicketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := fmt.Sprintf("http://users-service:8082/users/%d", ticket.UserID)
-	fmt.Printf("INFO: Serviço de tickets fazendo uma requisição interna para: %s\n", url)
+	idUser := r.Context().Value(middleware.UserIDKey).(int64)
 
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Header de autorização ausente", http.StatusUnauthorized)
-		return
-	}
-
-	headerParts := strings.Split(authHeader, " ")
-	if len(headerParts) != 2 || strings.ToLower(headerParts[0]) != "bearer" {
-		http.Error(w, "Header de autorização mal formatado", http.StatusUnauthorized)
-		return
-	}
-
-	tokenString := headerParts[1]
-
-	cliente := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	reqInternal, err := http.NewRequest("GET", url, nil)
+	ticket.Author, err = GetTicketAuthor(idUser, r)
 	if err != nil {
-		http.Error(w, "Erro ao criar requisição interna: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Erro ao obter os dados do usuario", http.StatusBadRequest)
 		return
 	}
-
-	reqInternal.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenString))
-	reqInternal.Header.Set("Content-Type", "application/json")
-
-	//Fazendo a requisição
-	resposta, err := cliente.Do(reqInternal)
-	if err != nil {
-		log.Printf("ERRO: Falha ao fazer requisição para o serviço de usuarios: %v", err)
-		http.Error(w, "ERRO: Falha ao fazer a requisição para o serviço de usuarios", http.StatusBadRequest)
-		return
-	}
-	defer resposta.Body.Close()
-
-	//Verificando se o status da resposta foi bem sucedido (status code 2xx)
-	if resposta.StatusCode != http.StatusOK {
-		http.Error(w, "Erro ao consultar serviço de usuarios", http.StatusBadRequest)
-		return
-	}
-
-	var ticketAuthor model.TicketAuthor
-	if err = json.NewDecoder(resposta.Body).Decode(&ticketAuthor); err != nil {
-		http.Error(w, "Erro ao decodificar o corpo da resposta do users-service", http.StatusBadRequest)
-		return
-	}
-
-	ticket.Author = ticketAuthor
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(ticket)
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(ticket); err != nil {
 		http.Error(w, "Erro ao converter ticket para json", http.StatusInternalServerError)
 		return
 	}
@@ -240,14 +153,12 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 	idReq := r.Context().Value(middleware.UserIDKey)
 
 	var ticketReq model.UpdateTicketPayload
-	err = json.NewDecoder(r.Body).Decode(&ticketReq)
-	if err != nil {
+	if err = json.NewDecoder(r.Body).Decode(&ticketReq); err != nil {
 		http.Error(w, "Erro ao decodificar o corpo da requisição", http.StatusBadRequest)
 		return
 	}
 
-	var ticketOg model.Ticket
-	ticketOg, err = api.rep.GetTicketByID(idInt)
+	ticketOg, err := api.rep.GetTicketByID(idInt)
 	if err != nil {
 		http.Error(w, "Erro ao obter o ticket no banco de dados", http.StatusInternalServerError)
 		return
@@ -263,8 +174,7 @@ func (api *ApiServer) UpdateTicketHandler(w http.ResponseWriter, r *http.Request
 	ticketOg.Anexos = ticketReq.Anexos
 	ticketOg.CategoriaID = ticketReq.CategoriaID
 
-	err = api.rep.UpdateTicket(idInt, ticketOg)
-	if err == pgx.ErrNoRows {
+	if err = api.rep.UpdateTicket(idInt, ticketOg); err == pgx.ErrNoRows {
 		http.Error(w, "Registro não encontrado", http.StatusNotFound)
 		return
 	} else if err != nil {
@@ -292,7 +202,7 @@ func (api *ApiServer) UpdateTicketStatusHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	idReq := r.Context().Value(middleware.UserIDKey)
+	idReq := r.Context().Value(middleware.UserIDKey).(int64)
 
 	if idReq != ticketOg.UserID {
 		http.Error(w, "Permissão não concedida", http.StatusForbidden)
@@ -323,15 +233,18 @@ func (api *ApiServer) DeleteTicketHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	idReq := r.Context().Value(middleware.UserIDKey).(int64)
+	idReq, ok := r.Context().Value(middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "Erro ao extrair o ID do usuario da requisição", http.StatusInternalServerError)
+		return
+	}
 
 	if ticket.UserID != idReq {
 		http.Error(w, "Permissão não concedida", http.StatusForbidden)
 		return
 	}
 
-	err = api.rep.DeleteTicket(idInt)
-	if err == pgx.ErrNoRows {
+	if err = api.rep.DeleteTicket(idInt); err == pgx.ErrNoRows {
 		http.Error(w, "Registro não encontrado", http.StatusNotFound)
 		return
 	} else if err != nil {
@@ -373,7 +286,10 @@ func (api *ApiServer) CreateCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(comentario)
+	if err := json.NewEncoder(w).Encode(comentario); err != nil {
+		http.Error(w, "Erro ao encodificar a resposta", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (api *ApiServer) ListCommentsByTicketHandler(w http.ResponseWriter, r *http.Request) {
@@ -490,8 +406,7 @@ func (api *ApiServer) DeleteCommentHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = api.rep.DeleteComment(id)
-	if err == pgx.ErrNoRows {
+	if err = api.rep.DeleteComment(id); err == pgx.ErrNoRows {
 		http.Error(w, "Comentário não encontrado", http.StatusNotFound)
 		return
 	} else if err != nil {
@@ -499,4 +414,43 @@ func (api *ApiServer) DeleteCommentHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func GetTicketAuthor(userID int64, r *http.Request) (model.TicketAuthor, error) {
+	url := fmt.Sprintf("http://users-service:8082/users/%d", userID)
+	fmt.Printf("INFO: Serviço de tickets fazendo uma requisição interna para: %s\n", url)
+
+	tokenString, err := auth.ExtairToken(r)
+	if err != nil {
+		return model.TicketAuthor{}, err
+	}
+
+	cliente := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	reqInternal, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return model.TicketAuthor{}, err
+	}
+
+	reqInternal.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenString))
+	reqInternal.Header.Set("Content-Type", "application/json")
+
+	resposta, err := cliente.Do(reqInternal)
+	if err != nil {
+		return model.TicketAuthor{}, err
+	}
+	defer resposta.Body.Close()
+
+	if resposta.StatusCode != http.StatusOK {
+		return model.TicketAuthor{}, errors.New("erro ao fazer a requisição interna")
+	}
+
+	var ticketAuthor model.TicketAuthor
+	if err = json.NewDecoder(resposta.Body).Decode(&ticketAuthor); err != nil {
+		return model.TicketAuthor{}, err
+	}
+
+	return ticketAuthor, nil
 }

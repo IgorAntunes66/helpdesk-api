@@ -25,8 +25,7 @@ func (s *Repository) CreateUser(user model.User) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	err = s.db.QueryRow(context.Background(), "INSERT INTO users (nome, senha, tipoUser, email, telefone, cpfCnpj) VALUES ($1, $2, $3, $4, $5, $6) returning id", user.Nome, string(senha), user.TipoUser, user.Email, user.Telefone, user.CpfCnpj).Scan(&user.ID)
-	if err != nil {
+	if err = s.db.QueryRow(context.Background(), "INSERT INTO users (nome, senha, tipoUser, email, telefone, cpfCnpj) VALUES ($1, $2, $3, $4, $5, $6) returning id", user.Nome, string(senha), user.TipoUser, user.Email, user.Telefone, user.CpfCnpj).Scan(&user.ID); err != nil {
 		go func() {
 			log.Printf("Erro ao inserir o usuario no banco de dados: %v", err)
 		}()
@@ -70,11 +69,9 @@ func (s *Repository) FindAllUsers() ([]model.User, error) {
 }
 
 func (s *Repository) FindUserByID(id int64) (model.User, error) {
-	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE id=$1", id)
-
 	var u model.User
 
-	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
+	if err := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE id=$1", id).Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
 		go func() {
 			log.Printf("Erro ao decodificar o usuario: %v", err)
 		}()
@@ -85,11 +82,9 @@ func (s *Repository) FindUserByID(id int64) (model.User, error) {
 }
 
 func (s *Repository) FindUserByEmail(loginReq model.LoginRequest) (model.User, error) {
-	row := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$1", loginReq.Email)
-
 	var u model.User
 
-	if err := row.Scan(&u.ID, &u.Nome, &u.Senha, &u.TipoUser, &u.Email, &u.Telefone, &u.CpfCnpj); err != nil {
+	if err := s.db.QueryRow(context.Background(), "SELECT * FROM users WHERE email=$1", loginReq.Email).Scan(); err != nil {
 		return u, err
 	}
 

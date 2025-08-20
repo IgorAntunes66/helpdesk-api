@@ -21,8 +21,7 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 func (s *Repository) CreateTicket(ticket model.Ticket) (int64, error) {
-	err := s.db.QueryRow(context.Background(), "INSERT INTO tickets (titulo, descricao, status, diagnostico, solucao, prioridade, data_abertura, data_fechamento, data_atualizacao, anexos, tags, categoria_id, responsavel_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning id", ticket.Titulo, ticket.Descricao, ticket.Status, ticket.Diagnostico, ticket.Solucao, ticket.Prioridade, ticket.DataAbertura, ticket.DataFechamento, ticket.DataAtualizacao, ticket.Anexos, ticket.Tags, ticket.CategoriaID, ticket.ResponsavelID, ticket.UserID).Scan(&ticket.ID)
-	if err != nil {
+	if err := s.db.QueryRow(context.Background(), "INSERT INTO tickets (titulo, descricao, status, diagnostico, solucao, prioridade, data_abertura, data_fechamento, data_atualizacao, anexos, tags, categoria_id, responsavel_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning id", ticket.Titulo, ticket.Descricao, ticket.Status, ticket.Diagnostico, ticket.Solucao, ticket.Prioridade, ticket.DataAbertura, ticket.DataFechamento, ticket.DataAtualizacao, ticket.Anexos, ticket.Tags, ticket.CategoriaID, ticket.ResponsavelID, ticket.UserID).Scan(&ticket.ID); err != nil {
 		go func() {
 			log.Printf("Erro ao adicionar ticket no banco de dados: %v", err)
 		}()
@@ -40,8 +39,7 @@ func (s *Repository) ListTickets() ([]model.Ticket, error) {
 	}
 
 	for rows.Next() {
-		err := rows.Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
-		if err != nil {
+		if err := rows.Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID); err != nil {
 			return nil, err
 		}
 		lista = append(lista, ticket)
@@ -52,8 +50,7 @@ func (s *Repository) ListTickets() ([]model.Ticket, error) {
 
 func (s *Repository) GetTicketByID(id int) (model.Ticket, error) {
 	var ticket model.Ticket
-	err := s.db.QueryRow(context.Background(), "SELECT * FROM tickets WHERE id=$1", id).Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
-	if err != nil {
+	if err := s.db.QueryRow(context.Background(), "SELECT * FROM tickets WHERE id=$1", id).Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID); err != nil {
 		return ticket, err
 	}
 
@@ -70,8 +67,7 @@ func (s *Repository) GetTicketByUser(id int) ([]model.Ticket, error) {
 	var lista []model.Ticket
 
 	for rows.Next() {
-		err = rows.Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID)
-		if err != nil {
+		if err = rows.Scan(&ticket.ID, &ticket.Titulo, &ticket.Descricao, &ticket.Status, &ticket.Diagnostico, &ticket.Solucao, &ticket.Prioridade, &ticket.DataAbertura, &ticket.DataFechamento, &ticket.DataAtualizacao, &ticket.Anexos, &ticket.Tags, &ticket.CategoriaID, &ticket.ResponsavelID, &ticket.UserID); err != nil {
 			return []model.Ticket{}, err
 		}
 		lista = append(lista, ticket)
@@ -105,8 +101,7 @@ func (s *Repository) DeleteTicket(id int) error {
 }
 
 func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
-	err := s.db.QueryRow(context.Background(), "INSERT INTO comentarios (descricao, data, user_id, ticket_id) VALUES ($1, $2, $3, $4) returning id", comment.Descricao, comment.Data, comment.UserID, comment.TicketID).Scan(&comment.ID)
-	if err != nil {
+	if err := s.db.QueryRow(context.Background(), "INSERT INTO comentarios (descricao, data, user_id, ticket_id) VALUES ($1, $2, $3, $4) returning id", comment.Descricao, comment.Data, comment.UserID, comment.TicketID).Scan(&comment.ID); err != nil {
 		go func() {
 			log.Printf("Erro ao adicionar comentario no banco de dados: %v", err)
 		}()
@@ -119,8 +114,7 @@ func (s *Repository) CreateComment(comment model.Comentario) (int64, error) {
 func (s *Repository) GetCommentByID(id int) (model.Comentario, error) {
 	var comentario model.Comentario
 
-	err := s.db.QueryRow(context.Background(), "SELECT * FROM comentarios WHERE id=$1", id).Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID)
-	if err != nil {
+	if err := s.db.QueryRow(context.Background(), "SELECT * FROM comentarios WHERE id=$1", id).Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID); err != nil {
 		return model.Comentario{}, err
 	}
 
@@ -137,8 +131,7 @@ func (s *Repository) ListCommentsByTicketID(id int) ([]model.Comentario, error) 
 	}
 
 	for rows.Next() {
-		err := rows.Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID)
-		if err != nil {
+		if err := rows.Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID); err != nil {
 			return nil, err
 		}
 		lista = append(lista, comentario)
@@ -157,8 +150,7 @@ func (s *Repository) ListCommentsByUserID(id int) ([]model.Comentario, error) {
 	}
 
 	for rows.Next() {
-		err := rows.Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID)
-		if err != nil {
+		if err := rows.Scan(&comentario.ID, &comentario.Descricao, &comentario.Data, &comentario.UserID, &comentario.TicketID); err != nil {
 			return nil, err
 		}
 		lista = append(lista, comentario)

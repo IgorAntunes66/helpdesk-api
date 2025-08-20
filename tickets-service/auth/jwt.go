@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -57,4 +60,20 @@ func ValidarToken(tokenString string) (*ClaimCustom, error) {
 	}
 
 	return claims, nil
+}
+
+func ExtairToken(r *http.Request) (string, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", errors.New("autorização ausente no cabeçalho da requisição")
+	}
+
+	headerParts := strings.Split(authHeader, " ")
+	if len(headerParts) != 2 || strings.ToLower(headerParts[0]) != "bearer" {
+		return "", errors.New("header de autorização mal formatado")
+	}
+
+	tokenString := headerParts[1]
+
+	return tokenString, nil
 }
